@@ -43,9 +43,6 @@ export class AppService implements OnModuleInit {
       if (!existingRole) {
         const newRole = parentRoleRepository.create(roleData);
         await parentRoleRepository.save(newRole);
-        console.log(`ParentRole ${roleData.name} creado exitosamente`);
-      } else {
-        console.log(`ParentRole ${roleData.name} ya existe, omitiendo...`);
       }
     }
   }

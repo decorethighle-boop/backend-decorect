@@ -7,11 +7,11 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ParentRole, User } from './entities';
-import { TokenService } from './tokens/token.service';
-import { createJwtPayload } from './types/jwt-payload.interface';
-import { LoginType } from './types/login.type';
-import { TokenResponse } from './types/token-response';
+import { ParentRole, User } from '../entities';
+import { TokenService } from '../tokens/token.service';
+import { createJwtPayload } from '../types/jwt-payload.interface';
+import { LoginType } from '../types/login.type';
+import { TokenResponse } from '../types/token-response';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -96,5 +96,18 @@ export class AuthService implements OnModuleInit {
 
   async refresh(refreshToken: string): Promise<TokenResponse> {
     return this.tokenService.refreshTokens(refreshToken);
+  }
+
+  async getRoleByUserId(userId: string) {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        relations: ['parentRole', 'role'],
+      });
+      return user;
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+      throw new InternalServerErrorException('Error fetching user role');
+    }
   }
 }

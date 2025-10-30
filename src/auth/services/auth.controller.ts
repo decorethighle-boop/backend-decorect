@@ -4,16 +4,20 @@ import {
   HttpStatus,
   Post,
   Res,
+  UseGuards,
   UsePipes,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { Roles, RolesDecorator } from '../guards/roles/roles.decorator';
+import { RolesGuard } from '../guards/roles/roles.guard';
+import { LoginPipe } from '../pipes/login/login.pipe';
+import { RefreshTokenPipe } from '../pipes/refresh-token/refresh-token.pipe';
+import type { LoginType } from '../types/login.type';
+import type { RefreshToken } from '../types/refresh-token.type';
 import { AuthService } from './auth.service';
-import { LoginPipe } from './pipes/login/login.pipe';
-import { RefreshTokenPipe } from './pipes/refresh-token/refresh-token.pipe';
-import type { LoginType } from './types/login.type';
-import type { RefreshToken } from './types/refresh-token.type';
 
 @Controller('auth')
+@UseGuards(RolesGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -39,6 +43,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @RolesDecorator(Roles.All)
   @UsePipes(RefreshTokenPipe)
   async refresh(@Body() body: RefreshToken, @Res() res: Response) {
     try {
