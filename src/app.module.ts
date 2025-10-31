@@ -12,6 +12,8 @@ import { AuthModule } from './auth/auth.module';
 import { ParentRole, Permission, Role, User } from './auth/entities';
 import { TokenMiddleware } from './auth/middlewares/token/token.middleware';
 import { AuthController } from './auth/services/auth.controller';
+import { CategoriesModule } from './categories/categories.module';
+import { ProductsModule } from './products/products.module';
 
 config({ path: ['.env'] });
 
@@ -29,6 +31,8 @@ config({ path: ['.env'] });
       synchronize: true,
     }),
     AuthModule,
+    ProductsModule,
+    CategoriesModule,
   ],
   providers: [AppService],
 })

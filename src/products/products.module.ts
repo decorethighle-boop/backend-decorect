@@ -1,0 +1,16 @@
+// src/modules/products/products.module.ts
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Category } from '../categories/entities/category.entity';
+import { ProductsController } from './controllers/products.controller';
+import { ProductColor } from './entities/product-color.entity';
+import { Product } from './entities/product.entity';
+import { ProductsDbService } from './services/products-db.service';
+import { ProductsService } from './services/products.service';
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Product, ProductColor, Category])],
+  controllers: [ProductsController],
+  providers: [ProductsDbService, ProductsService],
+})
+export class ProductsModule {}
