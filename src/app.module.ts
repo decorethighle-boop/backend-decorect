@@ -9,9 +9,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { config } from 'dotenv';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { AuthController } from './auth/controllers/auth.controller';
 import { ParentRole, Permission, Role, User } from './auth/entities';
 import { TokenMiddleware } from './auth/middlewares/token/token.middleware';
-import { AuthController } from './auth/services/auth.controller';
 import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 
