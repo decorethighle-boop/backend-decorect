@@ -8,12 +8,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { config } from 'dotenv';
 import { AppService } from './app.service';
-import { AuthModule } from './auth/auth.module';
-import { AuthController } from './auth/controllers/auth.controller';
-import { ParentRole, Permission, Role, User } from './auth/entities';
-import { TokenMiddleware } from './auth/middlewares/token/token.middleware';
-import { CategoriesModule } from './categories/categories.module';
-import { ProductsModule } from './products/products.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { AuthController } from './modules/auth/controllers/auth.controller';
+import { ParentRole, Permission, Role, User } from './modules/auth/entities';
+import { TokenMiddleware } from './modules/auth/middlewares/token/token.middleware';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { ProductsModule } from './modules/products/products.module';
 
 config({ path: ['.env'] });
 
