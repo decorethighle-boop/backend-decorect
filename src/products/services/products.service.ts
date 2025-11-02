@@ -1,10 +1,7 @@
 // src/modules/products/services/products.service.ts
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable } from '@nestjs/common';
 
+import { CustomHttpException } from 'src/global/exceptions/custom-exception';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { Product } from '../entities/product.entity';
@@ -17,12 +14,16 @@ export class ProductsService {
   async create(dto: CreateProductDto) {
     const cats = await this.db.findCategoriesByIds(dto.subcategoryIds);
     if (cats.length !== dto.subcategoryIds.length) {
-      throw new BadRequestException('Some subcategory IDs do not exist');
+      throw new CustomHttpException(
+        'Some subcategory IDs do not exist',
+        HttpStatus.NOT_FOUND,
+      );
     }
     // validate that all are children
     if (cats.some(c => !c.parent)) {
-      throw new BadRequestException(
+      throw new CustomHttpException(
         'Assign only subcategories (categories with a parent).',
+        HttpStatus.UNPROCESSABLE_ENTITY,
       );
     }
 
@@ -46,7 +47,8 @@ export class ProductsService {
 
   async update(id: string, dto: UpdateProductDto) {
     const existing = await this.db.findProductById(id);
-    if (!existing) throw new NotFoundException('Product not found');
+    if (!existing)
+      throw new CustomHttpException('Product not found', HttpStatus.NOT_FOUND);
 
     if (dto.name !== undefined) existing.name = dto.name;
     if (dto.type !== undefined) existing.type = dto.type;
@@ -65,7 +67,10 @@ export class ProductsService {
         cats.length !== dto.subcategoryIds.length ||
         cats.some(c => !c.parent)
       ) {
-        throw new BadRequestException('Assign only valid subcategories.');
+        throw new CustomHttpException(
+          'Assign only valid subcategories.',
+          HttpStatus.UNPROCESSABLE_ENTITY,
+        );
       }
       existing.subcategories = cats;
     }
