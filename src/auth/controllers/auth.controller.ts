@@ -17,12 +17,12 @@ import { Roles, RolesDecorator } from '../guards/roles/roles.decorator';
 import { RolesGuard } from '../guards/roles/roles.guard';
 import { LoginPipe } from '../pipes/login/login.pipe';
 import { RefreshTokenPipe } from '../pipes/refresh-token/refresh-token.pipe';
+import { AuthService } from '../services/auth.service';
 import type { CreateOrUpdatePermission } from '../types/create-or-update-permission.type';
 import type { CreateOrUpdateRoleType } from '../types/create-or-update-role.type';
 import type { FilterUsers } from '../types/filter-users.type';
 import type { LoginType } from '../types/login.type';
 import type { RefreshToken } from '../types/refresh-token.type';
-import { AuthService } from './auth.service';
 
 @Controller('auth')
 @UseGuards(RolesGuard)
