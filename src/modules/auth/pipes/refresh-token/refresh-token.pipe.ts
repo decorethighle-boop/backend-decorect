@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
-import { RefreshToken } from 'src/auth/types/refresh-token.type';
+import { RefreshToken } from '../../types/refresh-token.type';
 
 @Injectable()
 export class RefreshTokenPipe implements PipeTransform {
