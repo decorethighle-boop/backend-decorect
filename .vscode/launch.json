@@ -1,20 +1,27 @@
 {
   "version": "0.2.0",
   "configurations": [
-    
+    {
+      "type": "node-terminal",
+      "request": "launch",
+      "name": "Nest CLI (tsc watch) - npx",
+      "command": "cmd /c npx nest start -b tsc --watch --debug",
+      "cwd": "${workspaceFolder}"
+    },
     {
       "type": "node",
-      "request": "launch",
-      "name": "Debug NestJS",
-      "runtimeArgs": [
-        "-r", "tsconfig-paths/register",
-        "-r", "ts-node/register"
-      ],
-      "args": ["src/main.ts"],
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "internalConsoleOptions": "neverOpen"
-  }
-]
+      "request": "attach",
+      "name": "Attach to Nest (9229)",
+      "port": 9229,
+      "restart": true,
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**/*.js"],
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Nest (tsc + attach) - npx",
+      "configurations": ["Nest CLI (tsc watch) - npx", "Attach to Nest (9229)"]
+    }
+  ]
 }
-

@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { ParentRole } from './auth/entities';
+import { ParentRole } from './modules/auth/entities';
 
 @Injectable()
 export class AppService implements OnModuleInit {

@@ -1,5 +1,5 @@
 import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
-import { LoginType } from 'src/auth/types/login.type';
+import { LoginType } from '../../types/login.type';
 
 @Injectable()
 export class LoginPipe implements PipeTransform {
