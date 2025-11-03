@@ -17,8 +17,10 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('decorect')
     .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document, {
+    swaggerOptions: { persistAuthorization: true },
+  });
 
   // app.useGlobalInterceptors(new BadRequestInterceptor());
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
