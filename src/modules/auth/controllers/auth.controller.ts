@@ -18,8 +18,8 @@ import { RolesGuard } from '../guards/roles/roles.guard';
 import { LoginPipe } from '../pipes/login/login.pipe';
 import { RefreshTokenPipe } from '../pipes/refresh-token/refresh-token.pipe';
 import { AuthService } from '../services/auth.service';
-import type { CreateOrUpdatePermission } from '../types/create-or-update-permission.type';
 import type { CreateOrUpdateRoleType } from '../types/create-or-update-role.type';
+import type { FilterRoles } from '../types/filter-roles.type';
 import type { FilterUsers } from '../types/filter-users.type';
 import type { LoginType } from '../types/login.type';
 import type { RefreshToken } from '../types/refresh-token.type';
@@ -135,85 +135,15 @@ export class AuthController {
     }
   }
 
-  @Post('permissions')
-  @RolesDecorator(Roles.Admin)
-  async createPermission(
-    @Body() permission: CreateOrUpdatePermission,
-    @Res() res: Response,
-  ) {
-    try {
-      await this.authService.createPermission(permission);
-      return res.status(HttpStatus.OK).json({
-        success: true,
-        data: null,
-        message: 'Permission created successfully',
-      });
-    } catch (error) {
-      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
-        success: false,
-        data: null,
-        message: error.message || 'Permission create failed',
-      });
-    }
-  }
-
-  @Put('permissions/:permissionId')
-  @RolesDecorator(Roles.Admin)
-  async updatePermission(
-    @Param('permissionId') permissionId: string,
-    @Body() permission: CreateOrUpdatePermission,
-    @Res() res: Response,
-  ) {
-    try {
-      await this.authService.updatePermission({
-        ...permission,
-        id: permissionId,
-      });
-      return res.status(HttpStatus.OK).json({
-        success: true,
-        data: null,
-        message: 'Permission updated successfully',
-      });
-    } catch (error) {
-      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
-        success: false,
-        data: null,
-        message: error.message || 'Permission update failed',
-      });
-    }
-  }
-
-  @Delete('permissions/:permissionId')
-  @RolesDecorator(Roles.Admin)
-  async deletePermission(
-    @Param('permissionId') permissionId: string,
-    @Res() res: Response,
-  ) {
-    try {
-      await this.authService.deletePermission(permissionId);
-      return res.status(HttpStatus.OK).json({
-        success: true,
-        data: null,
-        message: 'Permission deleted successfully',
-      });
-    } catch (error) {
-      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
-        success: false,
-        data: null,
-        message: error.message || 'Permission delete failed',
-      });
-    }
-  }
-
   // --------------------------------------------------------------------------------
   // Roles
   // --------------------------------------------------------------------------------
 
   @Get('roles')
   @RolesDecorator(Roles.Admin)
-  async getRoles(@Res() res: Response) {
+  async getRoles(@Query() filters: FilterRoles, @Res() res: Response) {
     try {
-      const roles = await this.authService.getRoles();
+      const roles = await this.authService.getRoles(filters);
       return res.status(HttpStatus.OK).json({
         success: true,
         data: roles,
@@ -224,6 +154,25 @@ export class AuthController {
         success: false,
         data: null,
         message: error.message || 'Roles fetch failed',
+      });
+    }
+  }
+
+  @Get('parent-roles')
+  @RolesDecorator(Roles.Admin)
+  async getParentRoles(@Res() res: Response) {
+    try {
+      const parentRoles = await this.authService.getParentRoles();
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: parentRoles,
+        message: 'Parent roles fetched successfully',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message: error.message || 'Parent roles fetch failed',
       });
     }
   }

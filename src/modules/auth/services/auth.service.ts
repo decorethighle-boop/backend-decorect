@@ -18,6 +18,7 @@ import {
 import { TokenService } from '../tokens/token.service';
 import { CreateOrUpdatePermission } from '../types/create-or-update-permission.type';
 import { CreateOrUpdateRoleType } from '../types/create-or-update-role.type';
+import { FilterRoles } from '../types/filter-roles.type';
 import { FilterUsers } from '../types/filter-users.type';
 import { createJwtPayload } from '../types/jwt-payload.interface';
 import { LoginType } from '../types/login.type';
@@ -128,7 +129,7 @@ export class AuthService implements OnModuleInit {
 
   async getAllUsers({ page = 1, search, roleId }: FilterUsers) {
     try {
-      const limit = 12;
+      const limit = 18;
       const skip = (page - 1) * limit;
 
       const query = this.userRepository
@@ -267,20 +268,75 @@ export class AuthService implements OnModuleInit {
   // Roles
   // --------------------------------------------------------------------------------
 
-  async getRoles() {
+  async getRoles({ page = 1, search, parentRoleId }: FilterRoles) {
     try {
-      const roles = await this.roleRepository.find();
-      const parentRole = await this.parentRoleRepository.findOne({
-        where: { hierarchy: 2 },
-      });
+      const limit = page.toString() === '1' ? 17 : 18;
+      const skip = (page - 1) * limit;
 
-      if (!parentRole) {
-        throw new InternalServerErrorException('Error fetching roles');
+      const query = this.roleRepository
+        .createQueryBuilder('role')
+        .select(['role.id', 'role.name'])
+        .leftJoinAndSelect('role.parentRole', 'parentRole')
+        .leftJoinAndSelect('role.permissions', 'permission')
+        .select([
+          'role.id',
+          'role.name',
+          'parentRole.id',
+          'parentRole.name',
+          'permission.id',
+          'permission.name',
+        ])
+        .take(limit)
+        .skip(skip);
+
+      if (search) {
+        query.andWhere(
+          `(role.name ILIKE :search OR parentRole.name ILIKE :search)`,
+          { search: `%${search}%` },
+        );
       }
 
-      return [convertParentRoleToRole(parentRole), ...roles];
+      if (parentRoleId) {
+        query.andWhere('parentRole.id = :parentRoleId', { parentRoleId });
+      }
+
+      let [roles, total] = await query.getManyAndCount();
+
+      let extraParentRole: Role | null = null;
+      if (page.toString() === '1' && (search === '' || !search)) {
+        const parentRole = await this.parentRoleRepository.findOne({
+          where: { hierarchy: 2 },
+        });
+
+        if (!parentRole) {
+          throw new InternalServerErrorException('Error fetching parent role');
+        }
+
+        extraParentRole = convertParentRoleToRole(parentRole);
+        total += 1;
+      }
+
+      return {
+        roles: extraParentRole ? [extraParentRole, ...roles] : roles,
+        metadata: {
+          total,
+          page,
+          lastPage: Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+        },
+      };
     } catch (error) {
-      throw new InternalServerErrorException('Error fetching roles');
+      console.error('getRoles error:', error);
+      throw error;
+    }
+  }
+
+  async getParentRoles() {
+    try {
+      const parentRoles = await this.parentRoleRepository.find();
+      return parentRoles;
+    } catch (error) {
+      throw new InternalServerErrorException('Error fetching parent roles');
     }
   }
 
