@@ -1,7 +1,7 @@
 import { Transform } from 'class-transformer';
 import { IsString, IsUUID, Length } from 'class-validator';
 
-export class CreateOrUpdateCategoryValueDto {
+export class CreateOrUpdateProductTypeDto {
   @IsUUID('4', { message: 'id must be a valid UUID (v4)' })
   id: string;
 
@@ -13,10 +13,4 @@ export class CreateOrUpdateCategoryValueDto {
     return value.charAt(0).toUpperCase() + value.slice(1);
   })
   name: string;
-
-  @IsUUID('4', { message: 'parentCategoryId must be a valid UUID (v4)' })
-  parentCategoryId: string;
-
-  @IsUUID('4', { message: 'productTypeId must be a valid UUID (v4)' })
-  productTypeId: string;
 }

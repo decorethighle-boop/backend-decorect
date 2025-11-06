@@ -13,6 +13,9 @@ import { AuthController } from './modules/auth/controllers/auth.controller';
 import { ParentRole, Permission, Role, User } from './modules/auth/entities';
 import { TokenMiddleware } from './modules/auth/middlewares/token/token.middleware';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { CategoryValue } from './modules/categories/entities/category-value.entity';
+import { Category } from './modules/categories/entities/category.entity';
+import { ProductType } from './modules/products/entities/product-type.entity';
 import { ProductsModule } from './modules/products/products.module';
 
 config({ path: ['.env'] });
@@ -27,7 +30,15 @@ config({ path: ['.env'] });
       type: 'postgres',
       url: process.env.DATABASE_URL,
       ssl: { rejectUnauthorized: false },
-      entities: [User, Role, ParentRole, Permission],
+      entities: [
+        User,
+        Role,
+        ParentRole,
+        Permission,
+        Category,
+        CategoryValue,
+        ProductType,
+      ],
       synchronize: true,
     }),
     AuthModule,

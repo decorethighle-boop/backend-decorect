@@ -51,7 +51,7 @@ export class AuthService implements OnModuleInit {
       let user = await this.db.findUserByClerkId(body.clerkUserId);
 
       if (!user) {
-        const defaultParentRole = await this.db.findParentRoleByHierarchy(2);
+        const defaultParentRole = await this.db.findParentRoleByHierarchy(1);
         if (!defaultParentRole)
           throw new InternalServerErrorException('Error logging in');
 

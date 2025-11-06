@@ -7,4 +7,7 @@ export class Category {
 
   @Column({ length: 120 })
   name: string;
+
+  @Column({ type: 'boolean', default: true })
+  canBeDeleted: boolean;
 }

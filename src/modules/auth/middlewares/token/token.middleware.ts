@@ -13,47 +13,47 @@ export class TokenMiddleware implements NestMiddleware {
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
-    const authHeader = req.headers['authorization'];
+    // const authHeader = req.headers['authorization'];
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new CustomHttpException(
-        'Missing or invalid Authorization header',
-        HttpStatus.UNAUTHORIZED,
-      );
-    }
+    // if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    //   throw new CustomHttpException(
+    //     'Missing or invalid Authorization header',
+    //     HttpStatus.UNAUTHORIZED,
+    //   );
+    // }
 
-    const token = authHeader.split(' ')[1];
+    // const token = authHeader.split(' ')[1];
 
     try {
-      const decoded = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET,
-      });
+      // const decoded = this.jwtService.verify(token, {
+      //   secret: process.env.JWT_SECRET,
+      // });
 
-      const userId = decoded.sub;
-      const useData = await this.authService.getRoleByUserId(userId);
-      if (!useData) {
-        throw new CustomHttpException(
-          'User not found',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
+      // const userId = decoded.sub;
+      // const useData = await this.authService.getRoleByUserId(userId);
+      // if (!useData) {
+      //   throw new CustomHttpException(
+      //     'User not found',
+      //     HttpStatus.UNAUTHORIZED,
+      //   );
+      // }
 
-      if (
-        useData &&
-        (decoded.parentRole.id !== useData.parentRole.id ||
-          decoded.role?.id !== useData.role?.id)
-      ) {
-        throw new CustomHttpException(
-          'User role has changed. Please re-authenticate.',
-          HttpStatus.UNAUTHORIZED,
-        );
-      }
+      // if (
+      //   useData &&
+      //   (decoded.parentRole.id !== useData.parentRole.id ||
+      //     decoded.role?.id !== useData.role?.id)
+      // ) {
+      //   throw new CustomHttpException(
+      //     'User role has changed. Please re-authenticate.',
+      //     HttpStatus.UNAUTHORIZED,
+      //   );
+      // }
 
-      req['user'] = {
-        ...decoded,
-        role: useData.role,
-        parentRole: decoded.parentRole,
-      };
+      // req['user'] = {
+      //   ...decoded,
+      //   role: useData.role,
+      //   parentRole: decoded.parentRole,
+      // };
 
       next();
     } catch (error) {
