@@ -1,15 +1,15 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { ParentRole } from './modules/auth/entities';
+import { ParentRole, Permission } from './modules/auth/entities';
 
 @Injectable()
 export class AppService implements OnModuleInit {
   constructor(private readonly dataSource: DataSource) {}
 
   async onModuleInit() {
-    // Descomentar el siguiente bloque para eliminar todas las tablas al iniciar la aplicación
+    // Uncomment this block if you ever want to delete all tables when the app starts
     // try {
-    //   console.log('🧨 Eliminando todas las tablas...');
+    //   console.log('🧨 Dropping all tables...');
     //   await this.dataSource.query(`
     //     DO $$
     //     DECLARE
@@ -20,11 +20,12 @@ export class AppService implements OnModuleInit {
     //         END LOOP;
     //     END $$;
     //   `);
-    //   console.log('✅ Todas las tablas fueron eliminadas exitosamente.');
+    //   console.log('✅ All tables were dropped successfully.');
     // } catch (error) {
-    //   console.error('❌ Error al eliminar las tablas:', error);
+    //   console.error('❌ Error while dropping tables:', error);
     // }
     await this.seedParentRoles();
+    await this.seedPermissions();
   }
 
   private async seedParentRoles() {
@@ -43,6 +44,47 @@ export class AppService implements OnModuleInit {
       if (!existingRole) {
         const newRole = parentRoleRepository.create(roleData);
         await parentRoleRepository.save(newRole);
+      }
+    }
+  }
+
+  // 👇 New method to seed fixed permissions
+  private async seedPermissions() {
+    const permissionRepository = this.dataSource.getRepository(Permission);
+
+    const permissionGroups = [
+      {
+        group: 'users',
+        actions: ['create', 'edit', 'delete'],
+      },
+      {
+        group: 'products',
+        actions: ['create', 'edit', 'delete'],
+      },
+      {
+        group: 'ranks',
+        actions: ['create', 'edit', 'delete'],
+      },
+    ];
+
+    for (const { group, actions } of permissionGroups) {
+      for (const action of actions) {
+        const permissionName = `${action} ${group}`;
+
+        const existingPermission = await permissionRepository.findOne({
+          where: { name: permissionName },
+        });
+
+        if (!existingPermission) {
+          const newPermission = permissionRepository.create({
+            name: permissionName,
+            description: `Allows the user to ${action} ${group}`,
+            group,
+          });
+
+          await permissionRepository.save(newPermission);
+          console.log(`✅ Permission created: ${permissionName}`);
+        }
       }
     }
   }

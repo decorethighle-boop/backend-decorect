@@ -1,9 +1,9 @@
 import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
-import { LoginType } from '../../types/login.type';
+import { LoginDto } from '../../dto/login.dto';
 
 @Injectable()
 export class LoginPipe implements PipeTransform {
-  transform(value: LoginType, metadata: ArgumentMetadata) {
+  transform(value: LoginDto, metadata: ArgumentMetadata) {
     const { clerkUserId } = value;
 
     if (!clerkUserId || typeof clerkUserId !== 'string') {

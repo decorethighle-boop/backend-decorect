@@ -13,15 +13,15 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { CreateOrUpdateRole } from '../dto/create-or-update-role.type';
+import { LoginDto } from '../dto/login.dto';
 import { Roles, RolesDecorator } from '../guards/roles/roles.decorator';
 import { RolesGuard } from '../guards/roles/roles.guard';
 import { LoginPipe } from '../pipes/login/login.pipe';
 import { RefreshTokenPipe } from '../pipes/refresh-token/refresh-token.pipe';
 import { AuthService } from '../services/auth.service';
-import type { CreateOrUpdateRoleType } from '../types/create-or-update-role.type';
 import type { FilterRoles } from '../types/filter-roles.type';
 import type { FilterUsers } from '../types/filter-users.type';
-import type { LoginType } from '../types/login.type';
 import type { RefreshToken } from '../types/refresh-token.type';
 
 @Controller('auth')
@@ -35,7 +35,7 @@ export class AuthController {
 
   @Post('login')
   @UsePipes(LoginPipe)
-  async login(@Body() body: LoginType, @Res() res: Response) {
+  async login(@Body() body: LoginDto, @Res() res: Response) {
     try {
       const token = await this.authService.login(body);
       return res.status(HttpStatus.OK).json({
@@ -158,28 +158,9 @@ export class AuthController {
     }
   }
 
-  @Get('parent-roles')
-  @RolesDecorator(Roles.Admin)
-  async getParentRoles(@Res() res: Response) {
-    try {
-      const parentRoles = await this.authService.getParentRoles();
-      return res.status(HttpStatus.OK).json({
-        success: true,
-        data: parentRoles,
-        message: 'Parent roles fetched successfully',
-      });
-    } catch (error) {
-      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
-        success: false,
-        data: null,
-        message: error.message || 'Parent roles fetch failed',
-      });
-    }
-  }
-
   @Post('roles')
   @RolesDecorator(Roles.Admin)
-  async createRole(@Body() role: CreateOrUpdateRoleType, @Res() res: Response) {
+  async createRole(@Body() role: CreateOrUpdateRole, @Res() res: Response) {
     try {
       await this.authService.createRole(role);
       return res.status(HttpStatus.OK).json({
@@ -200,7 +181,7 @@ export class AuthController {
   @RolesDecorator(Roles.Admin)
   async updateRole(
     @Param('roleId') roleId: string,
-    @Body() role: CreateOrUpdateRoleType,
+    @Body() role: CreateOrUpdateRole,
     @Res() res: Response,
   ) {
     try {

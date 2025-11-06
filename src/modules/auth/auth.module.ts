@@ -6,6 +6,7 @@ import { AuthController } from './controllers/auth.controller';
 import { ParentRole, Permission, Role, User } from './entities';
 import { JwtRefreshStrategy } from './jwt/jwt-refresh.strategy';
 import { JwtStrategy } from './jwt/jwt.strategy';
+import { AuthDbService } from './services/auth-db.service';
 import { AuthService } from './services/auth.service';
 import { TokenService } from './tokens/token.service';
 
@@ -18,7 +19,7 @@ import { TokenService } from './tokens/token.service';
       signOptions: { expiresIn: '1d' },
     }),
   ],
-  exports: [AuthService],
+  exports: [AuthService, AuthDbService],
   controllers: [AuthController],
   providers: [
     AuthService,
@@ -26,6 +27,7 @@ import { TokenService } from './tokens/token.service';
     JwtRefreshStrategy,
     TokenService,
     JwtService,
+    AuthDbService,
   ],
 })
 export class AuthModule {}

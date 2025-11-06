@@ -1,59 +1,58 @@
-// src/modules/products/entities/product.entity.ts
 import {
-  Check,
   Column,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Category } from '../../categories/entities/category.entity';
-import { ProductColor } from './product-color.entity';
 
-export enum ProductType {
-  GENERIC = 'GENERIC',
-  TILE = 'TILE',
-  SERVICE = 'SERVICE',
-}
+import { CategoryValue } from 'src/modules/categories/entities/category-value.entity';
+import { ColorProductImage } from './product-color.entity';
+import { ProductType } from './product-type.entity';
 
 @Entity('products')
-@Check(`char_length("countryOfOrigin") = 2`) // ISO-3166 alpha-2 Example: 'US', 'CA', 'ES'
 export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 180 })
+  @Column({ length: 150 })
   name: string;
 
-  @Column({ type: 'enum', enum: ProductType, default: ProductType.GENERIC })
-  type: ProductType;
+  @ManyToOne(() => ProductType, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'product_type_id' })
+  productType: ProductType;
+
+  @Column({ name: 'main_photo', nullable: true })
+  mainPhoto: string;
+
+  @Column('text', { array: true, name: 'presentation_photos', nullable: true })
+  presentationPhotos: string[];
 
   @Column({ type: 'text', nullable: true })
-  description?: string | null;
+  description: string;
 
-  // URLs through CDN: the backend does NOT process images
-  @Column({ length: 2048, nullable: true })
-  mainImageUrl?: string | null;
-
-  @Column({ length: 2048, nullable: true })
-  presentationImageUrl?: string | null;
-
-  @Column({ length: 2 }) // EJ: 'US', 'CA', 'ES' (uppercase en DTO)
-  countryOfOrigin: string;
-
-  // Only subcategories are allowed (categories with parent != null)
-  @ManyToMany(() => Category)
+  @ManyToMany(() => CategoryValue, { cascade: true })
   @JoinTable({
-    name: 'product_subcategories',
+    name: 'product_sub_categories',
     joinColumn: { name: 'product_id' },
-    inverseJoinColumn: { name: 'category_id' },
+    inverseJoinColumn: { name: 'category_value_id' },
   })
-  subcategories: Category[];
+  subCategories: CategoryValue[];
 
-  @OneToMany(() => ProductColor, c => c.product, {
-    cascade: ['insert', 'update'],
-    eager: true,
+  @OneToMany(() => ColorProductImage, image => image.product, {
+    cascade: true,
   })
-  colorOptions: ProductColor[];
+  colorImages: ColorProductImage[];
+
+  @Column({ default: false })
+  rectified: boolean;
+
+  @Column({ name: 'anti_slip', default: false })
+  antiSlip: boolean;
+
+  @Column({ length: 120, name: 'production_country', nullable: true })
+  productionCountry: string;
 }

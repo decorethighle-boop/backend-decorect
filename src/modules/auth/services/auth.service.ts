@@ -6,82 +6,55 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
-import {
-  convertParentRoleToRole,
-  ParentRole,
-  Permission,
-  Role,
-  User,
-} from '../entities';
+import { CreateOrUpdateRole } from '../dto/create-or-update-role.type';
+import { LoginDto } from '../dto/login.dto';
+import { convertParentRoleToRole, Role, User } from '../entities';
 import { TokenService } from '../tokens/token.service';
-import { CreateOrUpdatePermission } from '../types/create-or-update-permission.type';
-import { CreateOrUpdateRoleType } from '../types/create-or-update-role.type';
 import { FilterRoles } from '../types/filter-roles.type';
 import { FilterUsers } from '../types/filter-users.type';
 import { createJwtPayload } from '../types/jwt-payload.interface';
-import { LoginType } from '../types/login.type';
 import { TokenResponse } from '../types/token-response';
+import { AuthDbService } from './auth-db.service';
 
 @Injectable()
 export class AuthService implements OnModuleInit {
   private clerkClient: ReturnType<typeof createClerkClient>;
 
   constructor(
-    private configService: ConfigService,
-    private tokenService: TokenService,
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
-    @InjectRepository(Role)
-    private readonly roleRepository: Repository<Role>,
-    @InjectRepository(ParentRole)
-    private parentRoleRepository: Repository<ParentRole>,
-    @InjectRepository(Permission)
-    private readonly permissionRepository: Repository<Permission>,
+    private readonly configService: ConfigService,
+    private readonly tokenService: TokenService,
+    private readonly db: AuthDbService,
   ) {}
 
   async onModuleInit() {
     const clerkSecretKey = this.configService.get<string>('CLERK_SECRET_KEY');
-
-    if (!clerkSecretKey) {
+    if (!clerkSecretKey)
       throw new Error(
         'CLERK_SECRET_KEY is not defined in environment variables',
       );
-    }
 
-    this.clerkClient = createClerkClient({
-      secretKey: clerkSecretKey,
-    });
-
+    this.clerkClient = createClerkClient({ secretKey: clerkSecretKey });
     console.log('Clerk client initialized successfully');
   }
 
-  // --------------------------------------------------------------------------------
-  // Users
-  // --------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // LOGIN
+  // ---------------------------------------------------------------------------
 
-  async login(body: LoginType) {
-    if (!this.clerkClient) {
+  async login(body: LoginDto) {
+    if (!this.clerkClient)
       throw new InternalServerErrorException('Error logging in');
-    }
 
     try {
       const clerkUser = await this.clerkClient.users.getUser(body.clerkUserId);
 
-      let user = await this.userRepository.findOne({
-        where: { clerkUserId: body.clerkUserId },
-        relations: ['parentRole', 'role'],
-      });
+      let user = await this.db.findUserByClerkId(body.clerkUserId);
 
       if (!user) {
-        const defaultParentRole = await this.parentRoleRepository.findOne({
-          where: { hierarchy: 1 },
-        });
-
-        if (!defaultParentRole) {
+        const defaultParentRole = await this.db.findParentRoleByHierarchy(2);
+        if (!defaultParentRole)
           throw new InternalServerErrorException('Error logging in');
-        }
+
         user = new User();
         user.clerkUserId = body.clerkUserId;
         user.firstName = clerkUser.firstName;
@@ -89,8 +62,7 @@ export class AuthService implements OnModuleInit {
         user.imageUrl = clerkUser.imageUrl;
         user.email = clerkUser.emailAddresses[0]?.emailAddress;
         user.parentRole = defaultParentRole;
-
-        await this.userRepository.save(user);
+        await this.db.saveUser(user);
       }
 
       const jwtPayload = createJwtPayload({
@@ -99,7 +71,7 @@ export class AuthService implements OnModuleInit {
         lastName: user.lastName,
         imageUrl: user.imageUrl,
         email: user.email,
-        role: user.role ? user.role : undefined,
+        role: user.role ?? undefined,
         parentRole: user.parentRole,
       });
 
@@ -115,16 +87,12 @@ export class AuthService implements OnModuleInit {
     return this.tokenService.refreshTokens(refreshToken);
   }
 
+  // ---------------------------------------------------------------------------
+  // USERS
+  // ---------------------------------------------------------------------------
+
   async getRoleByUserId(userId: string) {
-    try {
-      const user = await this.userRepository.findOne({
-        where: { id: userId },
-        relations: ['parentRole', 'role'],
-      });
-      return user;
-    } catch (error) {
-      throw new InternalServerErrorException('Error fetching user role');
-    }
+    return this.db.findUserById(userId);
   }
 
   async getAllUsers({ page = 1, search, roleId }: FilterUsers) {
@@ -132,23 +100,8 @@ export class AuthService implements OnModuleInit {
       const limit = 18;
       const skip = (page - 1) * limit;
 
-      const query = this.userRepository
-        .createQueryBuilder('user')
-        .leftJoinAndSelect('user.role', 'role')
-        .leftJoinAndSelect('user.parentRole', 'parentRole')
-        .select([
-          'user.id',
-          'user.firstName',
-          'user.lastName',
-          'user.imageUrl',
-          'user.email',
-          'user.created_at',
-          'role',
-          'parentRole',
-        ])
-        .orderBy('user.created_at', 'DESC')
-        .take(limit)
-        .skip(skip);
+      const query = await this.db.getUsersQueryBuilder();
+      query.orderBy('user.created_at', 'DESC').take(limit).skip(skip);
 
       if (search) {
         query.andWhere(
@@ -174,120 +127,35 @@ export class AuthService implements OnModuleInit {
           hasNextPage: page * limit < total,
         },
       };
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException('Error fetching users');
     }
   }
 
   async deleteUser(userId: string) {
-    try {
-      const user = await this.userRepository.findOne({ where: { id: userId } });
-
-      if (!user) {
-        throw new InternalServerErrorException('User not found');
-      }
-
-      await this.userRepository.remove(user);
-    } catch (error) {
-      throw new InternalServerErrorException('Error deleting user');
-    }
+    await this.db.deleteUserById(userId);
   }
 
-  // --------------------------------------------------------------------------------
-  // Permissions
-  // --------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // PERMISSIONS
+  // ---------------------------------------------------------------------------
 
   async getPermissions() {
-    try {
-      const permissions = await this.permissionRepository.find();
-      return permissions;
-    } catch (error) {
-      throw new InternalServerErrorException('Error fetching permissions');
-    }
+    return this.db.findAllPermissions();
   }
 
-  async createPermission(permission: CreateOrUpdatePermission) {
-    try {
-      const newPermission = this.permissionRepository.create({
-        id: permission.id,
-        name: permission.name,
-        description: permission.description,
-      });
-
-      await this.permissionRepository.save(newPermission);
-    } catch (error) {
-      throw new InternalServerErrorException('Error creating permission');
-    }
-  }
-
-  async updatePermission(permission: CreateOrUpdatePermission) {
-    try {
-      const permissionToUpdate = await this.permissionRepository.findOne({
-        where: { id: permission.id },
-      });
-
-      if (!permissionToUpdate) {
-        throw new NotFoundException(
-          `Permission with ID ${permission.id} not found`,
-        );
-      }
-
-      const updatedPermission = this.permissionRepository.merge(
-        permissionToUpdate,
-        {
-          name: permission.name,
-          description: permission.description,
-        },
-      );
-
-      await this.permissionRepository.save(updatedPermission);
-    } catch (error) {
-      throw new InternalServerErrorException('Error updating permission');
-    }
-  }
-
-  async deletePermission(permissionId: string) {
-    try {
-      const permission = await this.permissionRepository.findOne({
-        where: { id: permissionId },
-      });
-
-      if (!permission) {
-        throw new NotFoundException(
-          `Permission with ID ${permissionId} not found`,
-        );
-      }
-
-      await this.permissionRepository.remove(permission);
-    } catch (error) {
-      throw new InternalServerErrorException('Error deleting permission');
-    }
-  }
-
-  // --------------------------------------------------------------------------------
-  // Roles
-  // --------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // ROLES
+  // ---------------------------------------------------------------------------
 
   async getRoles({ page = 1, search, parentRoleId }: FilterRoles) {
     try {
-      const limit = page.toString() === '1' ? 17 : 18;
+      const limit = page.toString() === '1' ? 16 : 18;
       const skip = (page - 1) * limit;
 
-      const query = this.roleRepository
-        .createQueryBuilder('role')
-        .select(['role.id', 'role.name'])
-        .leftJoinAndSelect('role.parentRole', 'parentRole')
-        .leftJoinAndSelect('role.permissions', 'permission')
-        .select([
-          'role.id',
-          'role.name',
-          'parentRole.id',
-          'parentRole.name',
-          'permission.id',
-          'permission.name',
-        ])
-        .take(limit)
-        .skip(skip);
+      // Query principal
+      const query = await this.db.findRolesQueryBuilder();
+      query.take(limit).skip(skip);
 
       if (search) {
         query.andWhere(
@@ -301,23 +169,28 @@ export class AuthService implements OnModuleInit {
       }
 
       let [roles, total] = await query.getManyAndCount();
+      let extraParentRoles: Role[] = [];
 
-      let extraParentRole: Role | null = null;
-      if (page.toString() === '1' && (search === '' || !search)) {
-        const parentRole = await this.parentRoleRepository.findOne({
-          where: { hierarchy: 2 },
-        });
+      if (page.toString() === '1') {
+        let parentRoles = await this.db.findAllParentRoles();
 
-        if (!parentRole) {
-          throw new InternalServerErrorException('Error fetching parent role');
+        if (search) {
+          const lowerSearch = search.toLowerCase();
+          parentRoles = parentRoles.filter(p =>
+            p.name.toLowerCase().includes(lowerSearch),
+          );
         }
 
-        extraParentRole = convertParentRoleToRole(parentRole);
-        total += 1;
+        extraParentRoles = parentRoles.map(p => convertParentRoleToRole(p));
+        total += extraParentRoles.length;
       }
 
+      const finalRoles = extraParentRoles.length
+        ? [...extraParentRoles, ...roles]
+        : roles;
+
       return {
-        roles: extraParentRole ? [extraParentRole, ...roles] : roles,
+        roles: finalRoles,
         metadata: {
           total,
           page,
@@ -331,88 +204,49 @@ export class AuthService implements OnModuleInit {
     }
   }
 
-  async getParentRoles() {
+  async createRole(role: CreateOrUpdateRole) {
     try {
-      const parentRoles = await this.parentRoleRepository.find();
-      return parentRoles;
-    } catch (error) {
-      throw new InternalServerErrorException('Error fetching parent roles');
-    }
-  }
+      const parentRole = await this.db.findParentRoleByHierarchy(2);
+      if (!parentRole) throw new NotFoundException(`Parent role not found`);
 
-  async createRole(role: CreateOrUpdateRoleType) {
-    try {
-      const parentRole = await this.parentRoleRepository.findOne({
-        where: { hierarchy: 2 },
-      });
-      if (!parentRole) {
-        throw new NotFoundException(`Parent role not found`);
-      }
-
-      const permissions = await this.permissionRepository.find({
-        where: { id: In(role.permissions) },
-      });
-
-      if (permissions.length !== role.permissions.length) {
+      const permissions = await this.db.findPermissionsByIds(role.permissions);
+      if (permissions.length !== role.permissions.length)
         throw new NotFoundException(`Some permissions were not found`);
-      }
 
-      const newRole = this.roleRepository.create({
-        id: role.id,
-        name: role.name,
-        parentRole,
-        permissions,
-      });
+      const newRole = new Role();
+      newRole.id = role.id;
+      newRole.name = role.name;
+      newRole.parentRole = parentRole;
+      newRole.permissions = permissions;
 
-      await this.roleRepository.save(newRole);
+      await this.db.saveRole(newRole);
     } catch (error) {
       console.error('Error creating role:', error);
       throw new InternalServerErrorException('Error creating role');
     }
   }
 
-  async updateRole(role: CreateOrUpdateRoleType) {
+  async updateRole(role: CreateOrUpdateRole) {
     try {
-      const roleToUpdate = await this.roleRepository.findOne({
-        where: { id: role.id },
-      });
+      const roleToUpdate = await this.db.findRoleById(role.id);
+      if (!roleToUpdate) throw new NotFoundException(`Role not found`);
 
-      if (!roleToUpdate) {
-        throw new NotFoundException(`Role not found`);
-      }
-
-      const permissions = await this.permissionRepository.find({
-        where: { id: In(role.permissions) },
-      });
-
-      if (permissions.length !== role.permissions.length) {
+      const permissions = await this.db.findPermissionsByIds(role.permissions);
+      if (permissions.length !== role.permissions.length)
         throw new NotFoundException(`Some permissions were not found`);
-      }
 
-      const updatedRole = this.roleRepository.merge(roleToUpdate, {
-        name: role.name,
-        permissions,
-      });
+      roleToUpdate.name = role.name;
+      roleToUpdate.permissions = permissions;
 
-      await this.roleRepository.save(updatedRole);
-    } catch (error) {
+      await this.db.saveRole(roleToUpdate);
+    } catch {
       throw new InternalServerErrorException('Error updating role');
     }
   }
 
   async deleteRole(roleId: string) {
-    try {
-      const role = await this.roleRepository.findOne({
-        where: { id: roleId },
-      });
-
-      if (!role) {
-        throw new NotFoundException(`Role with ID ${roleId} not found`);
-      }
-
-      await this.roleRepository.remove(role);
-    } catch (error) {
-      throw new InternalServerErrorException('Error deleting role');
-    }
+    const role = await this.db.findRoleById(roleId);
+    if (!role) throw new NotFoundException(`Role with ID ${roleId} not found`);
+    await this.db.removeRole(role);
   }
 }
