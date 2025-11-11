@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { CreateOrUpdateCategoryValueDto } from '../dto/create-or-update-category-value.dto';
 import { CreateOrUpdateCategoryDto } from '../dto/create-or-update-category.dto';
 import { FilterCategories } from '../types/filter-categories.type';
 import { CategoriesDbService } from './categories-db.service';
@@ -6,6 +7,10 @@ import { CategoriesDbService } from './categories-db.service';
 @Injectable()
 export class CategoriesService {
   constructor(private readonly db: CategoriesDbService) {}
+
+  async onModuleInit() {
+    await this.db.ensureDefaultCategories();
+  }
 
   // --------------------------------------------------------------------------------
   // Categories
@@ -37,18 +42,55 @@ export class CategoriesService {
   }
 
   async createCategory(body: CreateOrUpdateCategoryDto) {
-    return this.db.createCategory(body);
+    this.db.createCategory(body);
   }
 
   async updateCategory(body: CreateOrUpdateCategoryDto) {
-    return this.db.updateCategory(body);
+    this.db.updateCategory(body);
   }
 
   async deleteCategory(id: string) {
-    return this.db.deleteCategory(id);
+    this.db.deleteCategory(id);
   }
 
   // --------------------------------------------------------------------------------
   // Categories Values
   // --------------------------------------------------------------------------------
+
+  async getCategoryValuesGrouped(productTypeId: string) {
+    const categoryValues =
+      await this.db.getCategoryValuesGrouped(productTypeId);
+
+    const grouped = categoryValues.reduce(
+      (acc, cv) => {
+        const parentId = cv.parentCategory.id;
+        if (!acc[parentId]) {
+          acc[parentId] = {
+            parentCategory: cv.parentCategory,
+            values: [],
+          };
+        }
+        acc[parentId].values.push({
+          id: cv.id,
+          name: cv.name,
+        });
+        return acc;
+      },
+      {} as Record<string, any>,
+    );
+
+    return Object.values(grouped);
+  }
+
+  async createCategoryValue(body: CreateOrUpdateCategoryValueDto) {
+    this.db.createCategoryValue(body);
+  }
+
+  async updateCategoryValue(body: CreateOrUpdateCategoryValueDto) {
+    this.db.updateCategoryValue(body);
+  }
+
+  async deleteCategoryValue(id: string) {
+    this.db.deleteCategoryValue(id);
+  }
 }

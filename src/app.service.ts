@@ -83,7 +83,6 @@ export class AppService implements OnModuleInit {
           });
 
           await permissionRepository.save(newPermission);
-          console.log(`✅ Permission created: ${permissionName}`);
         }
       }
     }

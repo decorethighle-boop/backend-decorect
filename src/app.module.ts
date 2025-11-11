@@ -40,6 +40,7 @@ config({ path: ['.env'] });
         ProductType,
       ],
       synchronize: true,
+      autoLoadEntities: true,
     }),
     AuthModule,
     ProductsModule,

@@ -7,13 +7,17 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Res,
   UsePipes,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import { CreateOrUpdateProductTypeDto } from '../dto/create-or-update-product-type.dto';
+import { CreateOrUpdateProductDto } from '../dto/create-or-update-product.dto';
 import { CreateOrUpdateProductTypesPipe } from '../pipes/create-or-update-product-types/create-or-update-product-types.pipe';
+import { GetProductsPipe } from '../pipes/get-products/get-products.pipe';
 import { ProductsService } from '../services/products.service';
+import type { FilterProducts } from '../types/filter-products.type';
 
 @Controller('products')
 export class ProductsController {
@@ -30,7 +34,7 @@ export class ProductsController {
       return res.status(HttpStatus.OK).json({
         success: true,
         data: productTypes,
-        message: '',
+        message: 'Product types fetched',
       });
     } catch (error) {
       return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
@@ -52,7 +56,7 @@ export class ProductsController {
       return res.status(HttpStatus.OK).json({
         success: true,
         data: null,
-        message: '',
+        message: 'Product type created',
       });
     } catch (error) {
       return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
@@ -74,7 +78,7 @@ export class ProductsController {
       return res.status(HttpStatus.OK).json({
         success: true,
         data: null,
-        message: '',
+        message: 'Product type updated',
       });
     } catch (error) {
       return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
@@ -92,13 +96,57 @@ export class ProductsController {
       return res.status(HttpStatus.OK).json({
         success: true,
         data: null,
-        message: '',
+        message: 'Product type deleted',
       });
     } catch (error) {
       return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
         success: false,
         data: null,
         message: error.message || 'Error deleting product type',
+      });
+    }
+  }
+
+  // --------------------------------------------------------------------------------
+  // Products
+  // --------------------------------------------------------------------------------
+
+  @Get('')
+  @UsePipes(GetProductsPipe)
+  async getProducts(@Query() filters: FilterProducts, @Res() res: Response) {
+    try {
+      const products = await this.service.getProducts(filters);
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: products,
+        message: 'Products fetched',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message: error.message || 'Error getting products',
+      });
+    }
+  }
+
+  @Post('')
+  async createProduct(
+    @Body() body: CreateOrUpdateProductDto,
+    @Res() res: Response,
+  ) {
+    try {
+      await this.service.createProduct(body);
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: null,
+        message: 'Product created',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message: error.message || 'Error creating product',
       });
     }
   }
