@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CategoryValue } from 'src/modules/categories/entities/category-value.entity';
 import { Repository } from 'typeorm';
 import { CreateOrUpdateProductTypeDto } from '../dto/create-or-update-product-type.dto';
 import { CreateOrUpdateProductDto } from '../dto/create-or-update-product.dto';
@@ -20,9 +19,6 @@ export class ProductsDbService {
 
     @InjectRepository(ProductType)
     private readonly productTypesRepository: Repository<ProductType>,
-
-    @InjectRepository(CategoryValue)
-    private readonly categoryValuesRepository: Repository<CategoryValue>,
   ) {}
 
   // --------------------------------------------------------------------------------

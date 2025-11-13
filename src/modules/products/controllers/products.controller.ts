@@ -15,6 +15,7 @@ import type { Response } from 'express';
 import { CreateOrUpdateProductTypeDto } from '../dto/create-or-update-product-type.dto';
 import { CreateOrUpdateProductDto } from '../dto/create-or-update-product.dto';
 import { CreateOrUpdateProductTypesPipe } from '../pipes/create-or-update-product-types/create-or-update-product-types.pipe';
+import { CreateOrUpdateProductPipe } from '../pipes/create-or-update-product/create-or-update-product.pipe';
 import { GetProductsPipe } from '../pipes/get-products/get-products.pipe';
 import { ProductsService } from '../services/products.service';
 import type { FilterProducts } from '../types/filter-products.type';
@@ -149,6 +150,7 @@ export class ProductsController {
   }
 
   @Post('')
+  @UsePipes(CreateOrUpdateProductPipe)
   async createProduct(
     @Body() body: CreateOrUpdateProductDto,
     @Res() res: Response,
@@ -170,6 +172,7 @@ export class ProductsController {
   }
 
   @Put('/:id')
+  @UsePipes(CreateOrUpdateProductPipe)
   async updateProduct(
     @Param('id') id: string,
     @Body() body: CreateOrUpdateProductDto,

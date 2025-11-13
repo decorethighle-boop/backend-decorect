@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CustomHttpException } from 'src/global/exceptions/custom-exception';
 import { ProductType } from 'src/modules/products/entities/product-type.entity';
+import { Product } from 'src/modules/products/entities/product.entity';
 import { Repository } from 'typeorm';
 import { CreateOrUpdateCategoryValueDto } from '../dto/create-or-update-category-value.dto';
 import { CreateOrUpdateCategoryDto } from '../dto/create-or-update-category.dto';
@@ -17,6 +18,8 @@ export class CategoriesDbService {
     private readonly categoryValuesRepository: Repository<CategoryValue>,
     @InjectRepository(ProductType)
     private readonly productTypesRepository: Repository<ProductType>,
+    @InjectRepository(Product)
+    private readonly productsRepository: Repository<Product>,
   ) {}
 
   // --------------------------------------------------------------------------------
@@ -46,7 +49,9 @@ export class CategoriesDbService {
     });
 
     if (!productType) {
-      throw new CustomHttpException('Product type not found');
+      throw new CustomHttpException(
+        'The selected product type does not exist.',
+      );
     }
 
     category.productType = productType;
@@ -58,8 +63,9 @@ export class CategoriesDbService {
       });
 
       if (existingGrouper) {
-        existingGrouper.grouper = false;
-        await this.categoriesRepository.save(existingGrouper);
+        throw new CustomHttpException(
+          'There is already a main category for this product type. You can only have one main category.',
+        );
       }
     }
 
@@ -67,25 +73,50 @@ export class CategoriesDbService {
   }
 
   async updateCategory(body: CreateOrUpdateCategoryDto) {
+    // 1️⃣ Find the category to update
     const category = await this.categoriesRepository.findOne({
       where: { id: body.id },
+      relations: ['productType'],
     });
-    if (!category) throw new NotFoundException(`Category not found`);
+    if (!category) throw new NotFoundException('Category not found');
 
+    // 2️⃣ Update name
     category.name = body.name;
 
+    // 3️⃣ Validate product type
     const productType = await this.productTypesRepository.findOne({
       where: { id: body.productTypeId },
     });
-
     if (!productType) {
-      throw new CustomHttpException('Product type not found');
+      throw new CustomHttpException(
+        'The selected product type does not exist.',
+      );
     }
-
     category.productType = productType;
+
+    // 4️⃣ Set grouper (default false)
     category.grouper = body.grouper ?? false;
 
+    // 5️⃣ Validate before setting grouper
     if (category.grouper) {
+      // Fetch all products of this product type
+      const products = await this.productsRepository.find({
+        where: { productType: { id: body.productTypeId } },
+      });
+
+      // Check if any product is missing this category
+      const productsMissingCategory = products.filter(
+        product =>
+          !product.categories.some(cat => cat.category_id === category.id),
+      );
+
+      if (productsMissingCategory.length > 0) {
+        throw new CustomHttpException(
+          'Cannot set this category as main because some products do not include it.',
+        );
+      }
+
+      // Disable existing grouper if any
       const existingGrouper = await this.categoriesRepository.findOne({
         where: { productType: { id: body.productTypeId }, grouper: true },
       });
@@ -96,7 +127,22 @@ export class CategoriesDbService {
       }
     }
 
+    // 6️⃣ Save updated category
     await this.categoriesRepository.save(category);
+
+    // 7️⃣ Update products' categories JSON
+    const productsToUpdate = await this.productsRepository.find({
+      where: { productType: { id: body.productTypeId } },
+    });
+
+    for (const product of productsToUpdate) {
+      product.categories = product.categories.map(cat => ({
+        ...cat,
+        grouper: cat.category_id === category.id ? category.grouper : false,
+      }));
+
+      await this.productsRepository.save(product);
+    }
   }
 
   async deleteCategory(id: string) {

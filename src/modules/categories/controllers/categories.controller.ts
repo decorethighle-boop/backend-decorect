@@ -88,10 +88,11 @@ export class CategoriesController {
         message: 'Category updated',
       });
     } catch (error) {
-      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+      return res.status(error.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         data: null,
-        message: error.message || 'Error updating category',
+        message:
+          error.response?.message || error.message || 'Error updating category',
       });
     }
   }
@@ -106,7 +107,7 @@ export class CategoriesController {
         message: 'Category deleted',
       });
     } catch (error) {
-      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+      return res.status(error.status || HttpStatus.INTERNAL_SERVER_ERROR).json({
         success: false,
         data: null,
         message: error.message || 'Error deleting category',

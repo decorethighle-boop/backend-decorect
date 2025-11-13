@@ -39,15 +39,15 @@ export class CategoriesService {
   }
 
   async createCategory(body: CreateOrUpdateCategoryDto) {
-    this.db.createCategory(body);
+    await this.db.createCategory(body);
   }
 
   async updateCategory(body: CreateOrUpdateCategoryDto) {
-    this.db.updateCategory(body);
+    await this.db.updateCategory(body);
   }
 
   async deleteCategory(id: string) {
-    this.db.deleteCategory(id);
+    await this.db.deleteCategory(id);
   }
 
   // --------------------------------------------------------------------------------
@@ -83,14 +83,14 @@ export class CategoriesService {
   }
 
   async createCategoryValue(body: CreateOrUpdateCategoryValueDto) {
-    this.db.createCategoryValue(body);
+    await this.db.createCategoryValue(body);
   }
 
   async updateCategoryValue(body: CreateOrUpdateCategoryValueDto) {
-    this.db.updateCategoryValue(body);
+    await this.db.updateCategoryValue(body);
   }
 
   async deleteCategoryValue(id: string) {
-    this.db.deleteCategoryValue(id);
+    await this.db.deleteCategoryValue(id);
   }
 }

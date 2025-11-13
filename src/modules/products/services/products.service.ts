@@ -1,7 +1,6 @@
 // src/modules/products/services/products.service.ts
 import { Injectable } from '@nestjs/common';
 
-import { CategoriesDbService } from 'src/modules/categories/services/categories-db.service';
 import { CreateOrUpdateProductTypeDto } from '../dto/create-or-update-product-type.dto';
 import { CreateOrUpdateProductDto } from '../dto/create-or-update-product.dto';
 import { FilterProducts } from '../types/filter-products.type';
@@ -10,10 +9,7 @@ import { ProductsDbService } from './products-db.service';
 
 @Injectable()
 export class ProductsService {
-  constructor(
-    private readonly db: ProductsDbService,
-    private readonly categoryDb: CategoriesDbService,
-  ) {}
+  constructor(private readonly db: ProductsDbService) {}
 
   async onModuleInit() {
     await this.db.ensureDefaultProductTypes();
@@ -28,15 +24,15 @@ export class ProductsService {
   }
 
   async createProductType(body: CreateOrUpdateProductTypeDto) {
-    return this.db.createProductType(body);
+    await this.db.createProductType(body);
   }
 
   async updateProductType(body: CreateOrUpdateProductTypeDto) {
-    return this.db.updateProductType(body);
+    await this.db.updateProductType(body);
   }
 
   async deleteProductType(id: string) {
-    return this.db.deleteProductType(id);
+    await this.db.deleteProductType(id);
   }
 
   // --------------------------------------------------------------------------------

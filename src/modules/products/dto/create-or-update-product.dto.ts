@@ -63,7 +63,7 @@ class VariantCategoryValueImagesDto {
   gallery: string[];
 }
 
-class VariantCategoryValueDto {
+export class VariantCategoryValueDto {
   @IsString()
   @IsNotEmpty()
   category_value_id: string;
@@ -82,7 +82,7 @@ class VariantCategoryValueDto {
   rules?: Record<string, string[]>;
 }
 
-class VariantCategoriesDto {
+export class VariantCategoriesDto {
   @IsString()
   @IsNotEmpty()
   category_id: string;
