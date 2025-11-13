@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { CustomHttpException } from 'src/global/exceptions/custom-exception';
+import { ProductType } from 'src/modules/products/entities/product-type.entity';
 import { Repository } from 'typeorm';
 import { CreateOrUpdateCategoryValueDto } from '../dto/create-or-update-category-value.dto';
 import { CreateOrUpdateCategoryDto } from '../dto/create-or-update-category.dto';
@@ -13,36 +15,13 @@ export class CategoriesDbService {
     private readonly categoriesRepository: Repository<Category>,
     @InjectRepository(CategoryValue)
     private readonly categoryValuesRepository: Repository<CategoryValue>,
+    @InjectRepository(ProductType)
+    private readonly productTypesRepository: Repository<ProductType>,
   ) {}
 
   // --------------------------------------------------------------------------------
   // Categories
   // --------------------------------------------------------------------------------
-
-  async ensureDefaultCategories() {
-    const defaultCategories = [
-      'Style',
-      'Shape',
-      'Size',
-      'Finish',
-      'Material',
-      'Color',
-      'Area',
-    ];
-
-    for (const name of defaultCategories) {
-      const exists = await this.categoriesRepository.findOne({
-        where: { name },
-      });
-      if (!exists) {
-        const category = this.categoriesRepository.create({
-          name,
-          canBeDeleted: false,
-        });
-        await this.categoriesRepository.save(category);
-      }
-    }
-  }
 
   async findCategoryValueById(id: string) {
     return this.categoryValuesRepository.findOne({
@@ -51,15 +30,40 @@ export class CategoriesDbService {
     });
   }
 
-  async getCategoriesQueryBuilder() {
-    return this.categoriesRepository.createQueryBuilder('category');
+  async getCategoriesQueryBuilder(productTypeId: string) {
+    return this.categoriesRepository
+      .createQueryBuilder('category')
+      .where('category.productType = :productTypeId', { productTypeId });
   }
 
   async createCategory(body: CreateOrUpdateCategoryDto) {
     const category = new Category();
+    category.id = body.id;
     category.name = body.name;
+
+    const productType = await this.productTypesRepository.findOne({
+      where: { id: body.productTypeId },
+    });
+
+    if (!productType) {
+      throw new CustomHttpException('Product type not found');
+    }
+
+    category.productType = productType;
+    category.grouper = body.grouper ?? false;
+
+    if (category.grouper) {
+      const existingGrouper = await this.categoriesRepository.findOne({
+        where: { productType: { id: body.productTypeId }, grouper: true },
+      });
+
+      if (existingGrouper) {
+        existingGrouper.grouper = false;
+        await this.categoriesRepository.save(existingGrouper);
+      }
+    }
+
     await this.categoriesRepository.save(category);
-    return category;
   }
 
   async updateCategory(body: CreateOrUpdateCategoryDto) {
@@ -67,9 +71,32 @@ export class CategoriesDbService {
       where: { id: body.id },
     });
     if (!category) throw new NotFoundException(`Category not found`);
+
     category.name = body.name;
+
+    const productType = await this.productTypesRepository.findOne({
+      where: { id: body.productTypeId },
+    });
+
+    if (!productType) {
+      throw new CustomHttpException('Product type not found');
+    }
+
+    category.productType = productType;
+    category.grouper = body.grouper ?? false;
+
+    if (category.grouper) {
+      const existingGrouper = await this.categoriesRepository.findOne({
+        where: { productType: { id: body.productTypeId }, grouper: true },
+      });
+
+      if (existingGrouper && existingGrouper.id !== category.id) {
+        existingGrouper.grouper = false;
+        await this.categoriesRepository.save(existingGrouper);
+      }
+    }
+
     await this.categoriesRepository.save(category);
-    return category;
   }
 
   async deleteCategory(id: string) {
@@ -86,7 +113,7 @@ export class CategoriesDbService {
     const categoryValues = await this.categoryValuesRepository
       .createQueryBuilder('categoryValue')
       .leftJoinAndSelect('categoryValue.parentCategory', 'parentCategory')
-      .where('categoryValue.productType = :productTypeId', { productTypeId })
+      .where('parentCategory.productType = :productTypeId', { productTypeId })
       .orderBy('parentCategory.name', 'ASC')
       .addOrderBy('categoryValue.name', 'ASC')
       .getMany();
@@ -103,16 +130,11 @@ export class CategoriesDbService {
     }
 
     const categoryValue = new CategoryValue();
+    categoryValue.id = body.id;
     categoryValue.name = body.name;
     categoryValue.parentCategory = parentCategory;
 
-    if (body.productTypeId) {
-      categoryValue.productType = { id: body.productTypeId } as any;
-    }
-
-    const x = await this.categoryValuesRepository.save(categoryValue);
-
-    return categoryValue;
+    await this.categoryValuesRepository.save(categoryValue);
   }
 
   async updateCategoryValue(body: CreateOrUpdateCategoryValueDto) {
@@ -122,9 +144,15 @@ export class CategoriesDbService {
     if (!categoryValue) throw new NotFoundException(`Category value not found`);
 
     categoryValue.name = body.name;
+    const parentCategory = await this.categoriesRepository.findOne({
+      where: { id: body.parentCategoryId },
+    });
+    if (!parentCategory) {
+      throw new NotFoundException(`Parent category not found`);
+    }
+    categoryValue.parentCategory = parentCategory;
 
     await this.categoryValuesRepository.save(categoryValue);
-    return categoryValue;
   }
 
   async deleteCategoryValue(id: string) {

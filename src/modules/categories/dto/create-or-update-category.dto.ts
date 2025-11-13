@@ -1,5 +1,11 @@
 import { Transform } from 'class-transformer';
-import { IsString, IsUUID, Length } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+} from 'class-validator';
 
 export class CreateOrUpdateCategoryDto {
   @IsUUID('4', { message: 'id must be a valid UUID (v4)' })
@@ -13,4 +19,11 @@ export class CreateOrUpdateCategoryDto {
     return value.charAt(0).toUpperCase() + value.slice(1);
   })
   name: string;
+
+  @IsUUID('4', { message: 'productTypeId must be a valid UUID (v4)' })
+  productTypeId: string;
+
+  @IsOptional()
+  @IsBoolean()
+  grouper: boolean;
 }

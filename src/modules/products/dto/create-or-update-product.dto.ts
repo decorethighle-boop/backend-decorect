@@ -1,16 +1,15 @@
 import { Transform, Type } from 'class-transformer';
 import {
-  ArrayMinSize,
   IsArray,
   IsBoolean,
+  IsNotEmpty,
+  IsObject,
   IsOptional,
   IsString,
-  IsUrl,
   IsUUID,
   Length,
   ValidateNested,
 } from 'class-validator';
-import { CreateOrUpdateColorProductImageDto } from './create-or-update-color-product-imate.dto';
 
 export class CreateOrUpdateProductDto {
   @IsUUID('4', { message: 'id must be a valid UUID (v4)' })
@@ -28,17 +27,6 @@ export class CreateOrUpdateProductDto {
   @IsUUID('4', { message: 'id must be a valid UUID (v4)' })
   productTypeId: string;
 
-  @IsUrl({}, { message: 'mainPhoto must be a valid URL' })
-  mainPhoto: string;
-
-  @IsArray({ message: 'presentationPhotos must be an array' })
-  @ArrayMinSize(1, { message: 'presentationPhotos must have at least 1 item' })
-  @IsUrl(
-    {},
-    { each: true, message: 'Each presentationPhoto must be a valid URL' },
-  )
-  presentationPhotos: string[];
-
   @IsString({ message: 'description must be a string' })
   @Length(10, 2000, {
     message: 'description must be between 10 and 2000 characters long',
@@ -49,23 +37,6 @@ export class CreateOrUpdateProductDto {
   })
   description: string;
 
-  @IsOptional()
-  @IsArray({ message: 'subCategories must be an array' })
-  @ArrayMinSize(1, { message: 'subCategories must have at least 1 item' })
-  @IsUUID('4', { each: true, message: 'Each subCategory must be a valid UUID' })
-  subCategories: string[];
-
-  @IsArray({ message: 'colorImages must be an array' })
-  @ValidateNested({ each: true })
-  @Type(() => CreateOrUpdateColorProductImageDto)
-  colorImages: CreateOrUpdateColorProductImageDto[];
-
-  @IsBoolean({ message: 'rectified must be a boolean' })
-  rectified: boolean;
-
-  @IsBoolean({ message: 'antiSlip must be a boolean' })
-  antiSlip: boolean;
-
   @IsString({ message: 'productionCountry must be a string' })
   @Length(2, 60, {
     message: 'productionCountry must be between 2 and 60 characters long',
@@ -75,4 +46,61 @@ export class CreateOrUpdateProductDto {
     return value.trim().toUpperCase();
   })
   productionCountry: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => VariantCategoriesDto)
+  categories: VariantCategoriesDto[];
+}
+
+class VariantCategoryValueImagesDto {
+  @IsString()
+  @IsNotEmpty()
+  main_photo: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  gallery: string[];
+}
+
+class VariantCategoryValueDto {
+  @IsString()
+  @IsNotEmpty()
+  category_value_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => VariantCategoryValueImagesDto)
+  images?: VariantCategoryValueImagesDto;
+
+  @IsOptional()
+  @IsObject()
+  rules?: Record<string, string[]>;
+}
+
+class VariantCategoriesDto {
+  @IsString()
+  @IsNotEmpty()
+  category_id: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @IsOptional()
+  @IsBoolean()
+  grouper?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  depends_on?: boolean;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => VariantCategoryValueDto)
+  values: VariantCategoryValueDto[];
 }

@@ -199,7 +199,6 @@ export class AuthService implements OnModuleInit {
         },
       };
     } catch (error) {
-      console.error('getRoles error:', error);
       throw error;
     }
   }
@@ -221,7 +220,6 @@ export class AuthService implements OnModuleInit {
 
       await this.db.saveRole(newRole);
     } catch (error) {
-      console.error('Error creating role:', error);
       throw new InternalServerErrorException('Error creating role');
     }
   }

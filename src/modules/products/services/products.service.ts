@@ -5,6 +5,7 @@ import { CategoriesDbService } from 'src/modules/categories/services/categories-
 import { CreateOrUpdateProductTypeDto } from '../dto/create-or-update-product-type.dto';
 import { CreateOrUpdateProductDto } from '../dto/create-or-update-product.dto';
 import { FilterProducts } from '../types/filter-products.type';
+import { fromProductsToProductsVariantsResponse } from '../types/products-response.type';
 import { ProductsDbService } from './products-db.service';
 
 @Injectable()
@@ -46,45 +47,44 @@ export class ProductsService {
     page = 1,
     search,
     productTypeId,
-    subCategoryId,
+    categoryValueId,
   }: FilterProducts) {
-    const limit = 18;
+    const limit = 16;
     const skip = (page - 1) * limit;
 
     const query = await this.db.getProductsQueryBuilder();
-    query.take(limit).skip(skip);
-
-    query.andWhere('product.productType = :productTypeId', {
-      productTypeId,
-    });
 
     if (search) {
-      query.andWhere('(product.name ILIKE :search)', {
-        search: `%${search}%`,
+      query.andWhere(
+        '(product.name ILIKE :search OR product.description ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+
+    if (productTypeId) {
+      query.andWhere('product.product_type_id = :productTypeId', {
+        productTypeId,
       });
     }
 
-    if (subCategoryId) {
-      const catValue =
-        await this.categoryDb.findCategoryValueById(subCategoryId);
-
-      if (catValue && catValue.parentCategory?.name === 'Color') {
-        query
-          .leftJoin('product.colorImages', 'colorImage')
-          .leftJoin('colorImage.categoryValue', 'colorCategoryValue')
-          .andWhere('colorCategoryValue.id = :subCategoryId', {
-            subCategoryId,
-          });
-      } else {
-        query
-          .leftJoin('product.subCategories', 'subCategory')
-          .andWhere('subCategory.id = :subCategoryId', { subCategoryId });
-      }
+    if (categoryValueId) {
+      query.andWhere('product.categories @> :categoryValue', {
+        categoryValue: JSON.stringify([
+          { values: [{ category_value_id: categoryValueId }] },
+        ]),
+      });
     }
 
+    query.take(limit).skip(skip);
+
     const [products, total] = await query.getManyAndCount();
-    return {
+
+    const variants = fromProductsToProductsVariantsResponse(
       products,
+      categoryValueId,
+    );
+    return {
+      variants,
       metadata: {
         total,
         page,
@@ -94,7 +94,19 @@ export class ProductsService {
     };
   }
 
+  async getProductById(id: string) {
+    return this.db.getProductById(id);
+  }
+
   async createProduct(body: CreateOrUpdateProductDto) {
     await this.db.createProduct(body);
+  }
+
+  async updateProduct(body: CreateOrUpdateProductDto) {
+    await this.db.updateProduct(body);
+  }
+
+  async deleteProduct(id: string) {
+    await this.db.deleteProduct(id);
   }
 }

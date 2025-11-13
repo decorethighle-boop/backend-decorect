@@ -35,13 +35,13 @@ export class AuthDbService {
   }
 
   async saveUser(user: User) {
-    return this.userRepository.save(user);
+    this.userRepository.save(user);
   }
 
   async deleteUserById(userId: string) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) throw new InternalServerErrorException('User not found');
-    return this.userRepository.remove(user);
+    this.userRepository.remove(user);
   }
 
   async getUsersQueryBuilder() {
@@ -89,11 +89,11 @@ export class AuthDbService {
   }
 
   async saveRole(role: Role) {
-    return this.roleRepository.save(role);
+    this.roleRepository.save(role);
   }
 
   async removeRole(role: Role) {
-    return this.roleRepository.remove(role);
+    this.roleRepository.remove(role);
   }
 
   async findParentRoleByHierarchy(hierarchy: number) {

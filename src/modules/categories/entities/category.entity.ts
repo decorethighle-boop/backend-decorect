@@ -1,4 +1,11 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { ProductType } from 'src/modules/products/entities/product-type.entity';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity('categories')
 export class Category {
@@ -8,6 +15,10 @@ export class Category {
   @Column({ length: 120 })
   name: string;
 
-  @Column({ type: 'boolean', default: true })
-  canBeDeleted: boolean;
+  @ManyToOne(() => ProductType, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'product_type_id' })
+  productType: ProductType;
+
+  @Column({ type: 'boolean', default: false })
+  grouper: boolean;
 }

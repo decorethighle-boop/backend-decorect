@@ -1,4 +1,3 @@
-import { ProductType } from 'src/modules/products/entities/product-type.entity';
 import {
   Column,
   Entity,
@@ -19,8 +18,4 @@ export class CategoryValue {
   @ManyToOne(() => Category, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'parent_category_id' })
   parentCategory: Category;
-
-  @ManyToOne(() => ProductType, { nullable: false, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'product_type_id' })
-  productType: ProductType;
 }

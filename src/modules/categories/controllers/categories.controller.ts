@@ -16,8 +16,11 @@ import { CreateOrUpdateCategoryValueDto } from '../dto/create-or-update-category
 import { CreateOrUpdateCategoryDto } from '../dto/create-or-update-category.dto';
 import { CreateOrUpdateCategoryValuePipe } from '../pipes/create-or-update-category-value/create-or-update-category-value.pipe';
 import { CreateOrUpdateParentPipe } from '../pipes/create-or-update-parent/create-or-update-parent.pipe';
+import { GetCategoriesPipe } from '../pipes/get-categories/get-categories.pipe';
+import { GetCategoryValuesPipe } from '../pipes/get-category-values/get-category-values.pipe';
 import { CategoriesService } from '../services/categories.service';
 import type { FilterCategories } from '../types/filter-categories.type';
+import type { FilterCategoryValues } from '../types/filter-category-values.type';
 
 @Controller('categories')
 export class CategoriesController {
@@ -27,6 +30,7 @@ export class CategoriesController {
   // --------------------------------------------------------------------------------
 
   @Get('parent')
+  @UsePipes(GetCategoriesPipe)
   async getCategories(
     @Query() filters: FilterCategories,
     @Res() res: Response,
@@ -114,14 +118,16 @@ export class CategoriesController {
   // Categories Values
   // --------------------------------------------------------------------------------
 
-  @Get('values/:parentCategoryId')
+  @Get('values')
+  @UsePipes(GetCategoryValuesPipe)
   async getCategoryValuesGrouped(
-    @Param('parentCategoryId') parentCategoryId: string,
+    @Query() filters: FilterCategoryValues,
     @Res() res: Response,
   ) {
     try {
-      const categoryValues =
-        await this.service.getCategoryValuesGrouped(parentCategoryId);
+      const categoryValues = await this.service.getCategoryValuesGrouped(
+        filters.productTypeId,
+      );
       return res.status(HttpStatus.OK).json({
         success: true,
         data: categoryValues,

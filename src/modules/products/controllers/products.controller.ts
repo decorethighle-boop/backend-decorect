@@ -130,6 +130,24 @@ export class ProductsController {
     }
   }
 
+  @Get('/:id')
+  async getProduct(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const product = await this.service.getProductById(id);
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: product,
+        message: 'Product fetched',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message: error.message || 'Error getting product',
+      });
+    }
+  }
+
   @Post('')
   async createProduct(
     @Body() body: CreateOrUpdateProductDto,
@@ -147,6 +165,46 @@ export class ProductsController {
         success: false,
         data: null,
         message: error.message || 'Error creating product',
+      });
+    }
+  }
+
+  @Put('/:id')
+  async updateProduct(
+    @Param('id') id: string,
+    @Body() body: CreateOrUpdateProductDto,
+    @Res() res: Response,
+  ) {
+    try {
+      await this.service.updateProduct({ ...body, id: id });
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: null,
+        message: 'Product updated',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message: error.message || 'Error updating product',
+      });
+    }
+  }
+
+  @Delete('/:id')
+  async deleteProduct(@Param('id') id: string, @Res() res: Response) {
+    try {
+      await this.service.deleteProduct(id);
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: null,
+        message: 'Product deleted',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message: error.message || 'Error deleting product',
       });
     }
   }

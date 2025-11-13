@@ -6,10 +6,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CategoryValue } from 'src/modules/categories/entities/category-value.entity';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CreateOrUpdateProductTypeDto } from '../dto/create-or-update-product-type.dto';
 import { CreateOrUpdateProductDto } from '../dto/create-or-update-product.dto';
-import { ColorProductImage } from '../entities/product-color.entity';
 import { ProductType } from '../entities/product-type.entity';
 import { Product } from '../entities/product.entity';
 
@@ -24,9 +23,6 @@ export class ProductsDbService {
 
     @InjectRepository(CategoryValue)
     private readonly categoryValuesRepository: Repository<CategoryValue>,
-
-    @InjectRepository(ColorProductImage)
-    private readonly colorImageRepository: Repository<ColorProductImage>,
   ) {}
 
   // --------------------------------------------------------------------------------
@@ -58,7 +54,6 @@ export class ProductsDbService {
     productType.id = body.id;
     productType.name = body.name;
     await this.productTypesRepository.save(productType);
-    return productType;
   }
 
   async updateProductType(body: CreateOrUpdateProductTypeDto) {
@@ -68,7 +63,6 @@ export class ProductsDbService {
     if (!productType) throw new NotFoundException(`Product type not found`);
     productType.name = body.name;
     await this.productTypesRepository.save(productType);
-    return productType;
   }
 
   async deleteProductType(id: string) {
@@ -86,91 +80,70 @@ export class ProductsDbService {
   async getProductsQueryBuilder() {
     return this.productsRepository
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.productType', 'productType')
-      .leftJoinAndSelect('product.subCategories', 'subCategories')
-      .leftJoinAndSelect('product.colorImages', 'colorImages');
+      .leftJoinAndSelect('product.productType', 'productType');
+  }
+
+  async getProductById(id: string) {
+    return this.productsRepository.findOne({
+      where: { id },
+      relations: ['productType'],
+    });
   }
 
   async createProduct(body: CreateOrUpdateProductDto) {
-    const {
-      id,
-      name,
-      productTypeId,
-      mainPhoto,
-      presentationPhotos,
-      description,
-      subCategories,
-      colorImages,
-      rectified,
-      antiSlip,
-      productionCountry,
-    } = body;
-
     const existingProduct = await this.productsRepository.findOne({
-      where: { name },
+      where: { id: body.id },
     });
+
     if (existingProduct) {
-      throw new ConflictException('Product already exists');
+      throw new ConflictException(`Product already exists`);
     }
 
     const productType = await this.productTypesRepository.findOne({
-      where: { id: productTypeId },
+      where: { id: body.productTypeId },
     });
-    if (!productType) {
-      throw new NotFoundException('Product type not found');
-    }
 
-    let subCategoryEntities: CategoryValue[] = [];
-    if (subCategories?.length) {
-      subCategoryEntities = await this.categoryValuesRepository.find({
-        where: { id: In(subCategories) },
-      });
-      if (subCategoryEntities.length !== subCategories.length) {
-        throw new NotFoundException('One or more subCategories not found');
-      }
+    if (!productType) {
+      throw new NotFoundException(`ProductType  not found`);
     }
 
     const product = this.productsRepository.create({
-      id,
-      name,
-      productType,
-      mainPhoto,
-      presentationPhotos,
-      description,
-      subCategories: subCategoryEntities,
-      rectified,
-      antiSlip,
-      productionCountry,
+      id: body.id,
+      name: body.name,
+      productType: productType,
+      description: body.description,
+      productionCountry: body.productionCountry,
+      categories: body.categories.map(cat => ({
+        ...cat,
+        depends_on: cat.depends_on ?? false,
+        grouper: cat.grouper ?? false,
+      })),
     });
 
-    const savedProduct = await this.productsRepository.save(product);
+    await this.productsRepository.save(product);
+  }
 
-    if (colorImages?.length) {
-      const colorImageEntities: ColorProductImage[] = [];
+  async updateProduct(body: CreateOrUpdateProductDto) {
+    const product = await this.productsRepository.findOne({
+      where: { id: body.id },
+    });
+    if (!product) throw new NotFoundException(`Product not found`);
+    product.name = body.name;
+    product.description = body.description;
+    product.productionCountry = body.productionCountry;
+    product.categories = body.categories.map(cat => ({
+      ...cat,
+      depends_on: cat.depends_on ?? false,
+      grouper: cat.grouper ?? false,
+    }));
+    await this.productsRepository.save(product);
+  }
 
-      for (const colorImageDto of colorImages) {
-        const { categoryValueId, image, default: isDefault } = colorImageDto;
-
-        const categoryValue = await this.categoryValuesRepository.findOne({
-          where: { id: categoryValueId },
-        });
-        if (!categoryValue) {
-          throw new NotFoundException(
-            `CategoryValue with id ${categoryValueId} not found`,
-          );
-        }
-
-        const colorImage = this.colorImageRepository.create({
-          product: savedProduct,
-          categoryValue,
-          image,
-          default: isDefault ?? false,
-        });
-
-        colorImageEntities.push(colorImage);
-      }
-
-      await this.colorImageRepository.save(colorImageEntities);
-    }
+  async deleteProduct(id: string) {
+    const product = await this.productsRepository.findOne({
+      where: { id },
+    });
+    if (!product) throw new NotFoundException(`Product not found`);
+    await this.productsRepository.remove(product);
   }
 }

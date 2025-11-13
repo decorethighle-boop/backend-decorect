@@ -16,7 +16,4 @@ export class CreateOrUpdateCategoryValueDto {
 
   @IsUUID('4', { message: 'parentCategoryId must be a valid UUID (v4)' })
   parentCategoryId: string;
-
-  @IsUUID('4', { message: 'productTypeId must be a valid UUID (v4)' })
-  productTypeId: string;
 }

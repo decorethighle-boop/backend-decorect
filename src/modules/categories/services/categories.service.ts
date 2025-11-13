@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateOrUpdateCategoryValueDto } from '../dto/create-or-update-category-value.dto';
 import { CreateOrUpdateCategoryDto } from '../dto/create-or-update-category.dto';
+import { Category } from '../entities/category.entity';
 import { FilterCategories } from '../types/filter-categories.type';
 import { CategoriesDbService } from './categories-db.service';
 
@@ -8,27 +9,23 @@ import { CategoriesDbService } from './categories-db.service';
 export class CategoriesService {
   constructor(private readonly db: CategoriesDbService) {}
 
-  async onModuleInit() {
-    await this.db.ensureDefaultCategories();
-  }
-
   // --------------------------------------------------------------------------------
   // Categories
   // --------------------------------------------------------------------------------
 
-  async getCategories({ page = 1, search }: FilterCategories) {
+  async getCategories({ page = 1, search, productTypeId }: FilterCategories) {
     const limit = 18;
     const skip = (page - 1) * limit;
 
-    const query = await this.db.getCategoriesQueryBuilder();
-    query.take(limit).skip(skip);
+    const query = await this.db.getCategoriesQueryBuilder(productTypeId);
 
     if (search) {
-      query.andWhere(`(category.name ILIKE :search)`, {
+      query.andWhere('LOWER(category.name) LIKE LOWER(:search)', {
         search: `%${search}%`,
       });
     }
 
+    query.take(limit).skip(skip);
     const [categories, total] = await query.getManyAndCount();
     return {
       categories,
@@ -76,7 +73,10 @@ export class CategoriesService {
         });
         return acc;
       },
-      {} as Record<string, any>,
+      {} as Record<
+        string,
+        { parentCategory: Category; values: { id: string; name: string }[] }
+      >,
     );
 
     return Object.values(grouped);
