@@ -54,7 +54,7 @@ export class CategoriesService {
   // Categories Values
   // --------------------------------------------------------------------------------
 
-  async getCategoryValuesGrouped(productTypeId: string) {
+  async getCategoryValuesGrouped(productTypeId: string, user: any) {
     const categoryValues =
       await this.db.getCategoryValuesGrouped(productTypeId);
 
@@ -78,6 +78,21 @@ export class CategoriesService {
         { parentCategory: Category; values: { id: string; name: string }[] }
       >,
     );
+
+    if (user?.parentRole.hierarchy === 2) {
+      const allCategoriesQuery =
+        await this.db.getCategoriesQueryBuilder(productTypeId);
+      const categories = await allCategoriesQuery.getMany();
+
+      categories.forEach(cat => {
+        if (!grouped[cat.id]) {
+          grouped[cat.id] = {
+            parentCategory: cat,
+            values: [],
+          };
+        }
+      });
+    }
 
     return Object.values(grouped);
   }

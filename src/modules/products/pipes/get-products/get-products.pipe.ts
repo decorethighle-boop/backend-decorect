@@ -17,7 +17,7 @@ export class GetProductsPipe implements PipeTransform {
 
     return {
       page,
-      search: search?.trim() || undefined,
+      search: search?.trim(),
       productTypeId,
       categoryValueId,
     };

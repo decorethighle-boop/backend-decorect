@@ -13,6 +13,7 @@ import { AuthController } from './modules/auth/controllers/auth.controller';
 import { ParentRole, Permission, Role, User } from './modules/auth/entities';
 import { TokenMiddleware } from './modules/auth/middlewares/token/token.middleware';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { CategoriesController } from './modules/categories/controllers/categories.controller';
 import { CategoryValue } from './modules/categories/entities/category-value.entity';
 import { Category } from './modules/categories/entities/category.entity';
 import { ProductType } from './modules/products/entities/product-type.entity';
@@ -53,6 +54,6 @@ export class AppModule implements NestModule {
     consumer
       .apply(TokenMiddleware)
       .exclude({ path: '/auth/login', method: RequestMethod.POST })
-      .forRoutes(AuthController);
+      .forRoutes(AuthController, CategoriesController);
   }
 }

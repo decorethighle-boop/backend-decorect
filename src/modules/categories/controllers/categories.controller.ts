@@ -8,10 +8,11 @@ import {
   Post,
   Put,
   Query,
+  Req,
   Res,
   UsePipes,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { CreateOrUpdateCategoryValueDto } from '../dto/create-or-update-category-value.dto';
 import { CreateOrUpdateCategoryDto } from '../dto/create-or-update-category.dto';
 import { CreateOrUpdateCategoryValuePipe } from '../pipes/create-or-update-category-value/create-or-update-category-value.pipe';
@@ -29,7 +30,7 @@ export class CategoriesController {
   // Categories
   // --------------------------------------------------------------------------------
 
-  @Get('parent')
+  @Get('')
   @UsePipes(GetCategoriesPipe)
   async getCategories(
     @Query() filters: FilterCategories,
@@ -51,7 +52,7 @@ export class CategoriesController {
     }
   }
 
-  @Post('parent')
+  @Post('')
   @UsePipes(CreateOrUpdateParentPipe)
   async createCategory(
     @Body() body: CreateOrUpdateCategoryDto,
@@ -73,7 +74,7 @@ export class CategoriesController {
     }
   }
 
-  @Put('parent/:id')
+  @Put('/:id')
   @UsePipes(CreateOrUpdateParentPipe)
   async updateCategory(
     @Param('id') id: string,
@@ -97,7 +98,7 @@ export class CategoriesController {
     }
   }
 
-  @Delete('parent/:id')
+  @Delete('/:id')
   async deleteCategory(@Param('id') id: string, @Res() res: Response) {
     try {
       await this.service.deleteCategory(id);
@@ -123,11 +124,14 @@ export class CategoriesController {
   @UsePipes(GetCategoryValuesPipe)
   async getCategoryValuesGrouped(
     @Query() filters: FilterCategoryValues,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     try {
+      const user = req['user'];
       const categoryValues = await this.service.getCategoryValuesGrouped(
         filters.productTypeId,
+        user,
       );
       return res.status(HttpStatus.OK).json({
         success: true,
