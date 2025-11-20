@@ -2,9 +2,8 @@ import { Product } from '../entities/product.entity';
 
 export type ProductsVariantsResponse = {
   productId: string;
-  categoryValueId: string;
+  categoryValueId?: string;
   name: string;
-  description: string;
   images?: {
     main_photo: string;
     gallery: string[];
@@ -74,7 +73,6 @@ export function fromProductsToProductsVariantsResponse(
         categoryValueId: grouperValue.category_value_id,
         name: `${product.name} ${grouperValue.name}`,
         images: grouperValue.images,
-        description: product.description,
       });
     });
   });

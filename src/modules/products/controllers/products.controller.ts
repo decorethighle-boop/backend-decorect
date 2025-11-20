@@ -8,10 +8,11 @@ import {
   Post,
   Put,
   Query,
+  Req,
   Res,
   UsePipes,
 } from '@nestjs/common';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { CreateOrUpdateProductTypeDto } from '../dto/create-or-update-product-type.dto';
 import { CreateOrUpdateProductDto } from '../dto/create-or-update-product.dto';
 import { CreateOrUpdateProductTypesPipe } from '../pipes/create-or-update-product-types/create-or-update-product-types.pipe';
@@ -114,9 +115,17 @@ export class ProductsController {
 
   @Get('')
   @UsePipes(GetProductsPipe)
-  async getProducts(@Query() filters: FilterProducts, @Res() res: Response) {
+  async getProducts(
+    @Query() filters: FilterProducts,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
     try {
-      const products = await this.service.getProducts(filters);
+      const user = req['user'];
+      const products = await this.service.getProducts({
+        ...filters,
+        user,
+      });
       return res.status(HttpStatus.OK).json({
         success: true,
         data: products,

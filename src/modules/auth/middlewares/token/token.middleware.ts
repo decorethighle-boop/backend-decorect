@@ -2,6 +2,7 @@ import { HttpStatus, Injectable, NestMiddleware } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { NextFunction, Request, Response } from 'express';
 
+import { match } from 'path-to-regexp';
 import { CustomHttpException } from 'src/global/exceptions/custom-exception';
 import { AuthService } from '../../services/auth.service';
 
@@ -13,24 +14,24 @@ export class TokenMiddleware implements NestMiddleware {
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
-    // Rutas que permiten no tener token
     const optionalAuthRoutes = [
       { path: '/categories/values', method: 'GET' },
-      // Puedes agregar más rutas opcionales aquí
+      { path: '/products', method: 'GET' },
+      { path: '/products/:id', method: 'GET' },
+      { path: '/products/:id', method: 'DELETE' },
     ];
 
-    const routeIsOptional = optionalAuthRoutes.some(
-      r => r.path === req.path && r.method === req.method,
-    );
-
+    const routeIsOptional = optionalAuthRoutes.some(route => {
+      const matcher = match(route.path, { decode: decodeURIComponent });
+      return route.method === req.method && matcher(req.path);
+    });
     const authHeader = req.headers['authorization'];
 
     if (!authHeader) {
       if (routeIsOptional) {
-        // No hay token, pero la ruta lo permite
         return next();
       }
-      // No hay token y no está permitido
+
       throw new CustomHttpException(
         'Missing Authorization header',
         HttpStatus.UNAUTHORIZED,
@@ -80,7 +81,6 @@ export class TokenMiddleware implements NestMiddleware {
       next();
     } catch (error) {
       if (routeIsOptional) {
-        // Si es ruta opcional y el token es inválido, seguimos sin user
         return next();
       }
       throw new CustomHttpException(

@@ -36,6 +36,7 @@ export class CategoriesDbService {
   async getCategoriesQueryBuilder(productTypeId: string) {
     return this.categoriesRepository
       .createQueryBuilder('category')
+      .leftJoinAndSelect('category.productType', 'productType')
       .where('category.productType = :productTypeId', { productTypeId });
   }
 

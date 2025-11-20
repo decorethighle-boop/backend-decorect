@@ -142,4 +142,8 @@ export class ProductsDbService {
     if (!product) throw new NotFoundException(`Product not found`);
     await this.productsRepository.remove(product);
   }
+
+  async deleteAllProducts() {
+    await this.productsRepository.deleteAll();
+  }
 }

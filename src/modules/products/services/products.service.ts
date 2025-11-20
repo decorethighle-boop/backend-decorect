@@ -4,7 +4,10 @@ import { Injectable } from '@nestjs/common';
 import { CreateOrUpdateProductTypeDto } from '../dto/create-or-update-product-type.dto';
 import { CreateOrUpdateProductDto } from '../dto/create-or-update-product.dto';
 import { FilterProducts } from '../types/filter-products.type';
-import { fromProductsToProductsVariantsResponse } from '../types/products-response.type';
+import {
+  fromProductsToProductsVariantsResponse,
+  ProductsVariantsResponse,
+} from '../types/products-response.type';
 import { ProductsDbService } from './products-db.service';
 
 @Injectable()
@@ -13,6 +16,7 @@ export class ProductsService {
 
   async onModuleInit() {
     await this.db.ensureDefaultProductTypes();
+    // await this.db.deleteAllProducts();
   }
 
   // --------------------------------------------------------------------------------
@@ -44,6 +48,7 @@ export class ProductsService {
     search,
     productTypeId,
     categoryValueId,
+    user,
   }: FilterProducts) {
     const limit = 16;
     const skip = (page - 1) * limit;
@@ -75,12 +80,44 @@ export class ProductsService {
 
     const [products, total] = await query.getManyAndCount();
 
-    const variants = fromProductsToProductsVariantsResponse(
-      products,
-      categoryValueId,
-    );
+    let variants: ProductsVariantsResponse[] = [];
+
+    if (user?.parentRole.hierarchy !== 2) {
+      variants = fromProductsToProductsVariantsResponse(
+        products,
+        categoryValueId,
+      );
+    } else {
+      variants = products.map(p => {
+        const grouperCategory = p.categories.find(cat => cat.grouper);
+
+        if (!grouperCategory || !grouperCategory.values.length) {
+          return {
+            productId: p.id,
+            name: p.name,
+          };
+        }
+
+        const [firstValue, ...otherValues] = grouperCategory.values;
+
+        const main_photo = firstValue.images?.main_photo || '';
+        const gallery = otherValues
+          .map(v => v.images?.main_photo)
+          .filter(Boolean) as string[];
+
+        return {
+          productId: p.id,
+          name: p.name,
+          images: {
+            main_photo,
+            gallery,
+          },
+        };
+      });
+    }
+
     return {
-      variants,
+      products: variants,
       metadata: {
         total,
         page,
