@@ -114,6 +114,7 @@ export class ProductsDbService {
         depends_on: cat.depends_on ?? false,
         grouper: cat.grouper ?? false,
       })),
+      variants: body.variants,
     });
 
     await this.productsRepository.save(product);
@@ -132,6 +133,7 @@ export class ProductsDbService {
       depends_on: cat.depends_on ?? false,
       grouper: cat.grouper ?? false,
     }));
+    product.variants = body.variants;
     await this.productsRepository.save(product);
   }
 

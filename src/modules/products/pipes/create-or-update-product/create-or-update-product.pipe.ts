@@ -31,7 +31,7 @@ export class CreateOrUpdateProductPipe implements PipeTransform {
       throw new CustomHttpException('Product must have a description');
     }
 
-    if (!categories || !Array.isArray(categories)) {
+    if (!categories || !Array.isArray(categories) || categories.length === 0) {
       throw new CustomHttpException('Categories must be an array');
     }
 

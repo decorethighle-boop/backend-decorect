@@ -30,6 +30,22 @@ interface VariantCategory {
   values: VariantCategoryValue[];
 }
 
+export interface GeneratedVariant {
+  name: string;
+  values: {
+    categoryId: string;
+    categoryName: string;
+    valueId: string;
+    valueName: string;
+  }[];
+  categories: VariantGeneratedVariantCategoryValue[];
+}
+
+export interface VariantGeneratedVariantCategoryValue {
+  categoryValueId: string;
+  name: string;
+}
+
 @Entity('products')
 export class Product {
   @PrimaryGeneratedColumn('uuid')
@@ -50,4 +66,7 @@ export class Product {
 
   @Column({ type: 'jsonb', nullable: false })
   categories: VariantCategory[];
+
+  @Column({ type: 'jsonb', nullable: false })
+  variants: GeneratedVariant[];
 }

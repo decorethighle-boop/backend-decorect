@@ -18,6 +18,7 @@ import { CategoryValue } from './modules/categories/entities/category-value.enti
 import { Category } from './modules/categories/entities/category.entity';
 import { ProductsController } from './modules/products/controllers/products.controller';
 import { ProductType } from './modules/products/entities/product-type.entity';
+import { Product } from './modules/products/entities/product.entity';
 import { ProductsModule } from './modules/products/products.module';
 
 config({ path: ['.env'] });
@@ -40,6 +41,7 @@ config({ path: ['.env'] });
         Category,
         CategoryValue,
         ProductType,
+        Product,
       ],
       synchronize: true,
       autoLoadEntities: true,

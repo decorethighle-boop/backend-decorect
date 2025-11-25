@@ -51,6 +51,11 @@ export class CreateOrUpdateProductDto {
   @ValidateNested({ each: true })
   @Type(() => VariantCategoriesDto)
   categories: VariantCategoriesDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GeneratedVariantDto)
+  variants: GeneratedVariantDto[];
 }
 
 class VariantCategoryValueImagesDto {
@@ -103,4 +108,41 @@ export class VariantCategoriesDto {
   @ValidateNested({ each: true })
   @Type(() => VariantCategoryValueDto)
   values: VariantCategoryValueDto[];
+}
+
+export class GenearatedVariantCategoryValueDto {
+  @IsString()
+  categoryValueId: string;
+
+  @IsString()
+  name: string;
+}
+
+export class GeneratedVariantValueDto {
+  @IsString()
+  categoryId: string;
+
+  @IsString()
+  categoryName: string;
+
+  @IsString()
+  valueId: string;
+
+  @IsString()
+  valueName: string;
+}
+
+export class GeneratedVariantDto {
+  @IsString()
+  name: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GeneratedVariantValueDto)
+  values: GeneratedVariantValueDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GenearatedVariantCategoryValueDto)
+  categories: GenearatedVariantCategoryValueDto[];
 }
