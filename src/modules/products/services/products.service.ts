@@ -23,7 +23,14 @@ export class ProductsService {
   // Product Types
   // --------------------------------------------------------------------------------
 
-  async getProductTypes() {
+  async getProductTypes(user: any) {
+    const shouldFilterByExistingProducts = user?.parentRole.hierarchy !== 2;
+
+    if (shouldFilterByExistingProducts) {
+      return this.db.getProductTypesWithProducts();
+    }
+
+    // Otherwise, return all product types
     return this.db.getProductTypes();
   }
 

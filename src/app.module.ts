@@ -20,6 +20,7 @@ import { ProductsController } from './modules/products/controllers/products.cont
 import { ProductType } from './modules/products/entities/product-type.entity';
 import { Product } from './modules/products/entities/product.entity';
 import { ProductsModule } from './modules/products/products.module';
+import { RangesModule } from './modules/ranges/ranges.module';
 
 config({ path: ['.env'] });
 
@@ -49,6 +50,7 @@ config({ path: ['.env'] });
     AuthModule,
     ProductsModule,
     CategoriesModule,
+    RangesModule,
   ],
   providers: [AppService],
 })

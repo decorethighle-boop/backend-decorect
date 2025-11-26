@@ -30,9 +30,10 @@ export class ProductsController {
   // --------------------------------------------------------------------------------
 
   @Get('product-types')
-  async getProductTypes(@Res() res: Response) {
+  async getProductTypes(@Res() res: Response, @Req() req: Request) {
     try {
-      const productTypes = await this.service.getProductTypes();
+      const user = req['user'];
+      const productTypes = await this.service.getProductTypes(user);
       return res.status(HttpStatus.OK).json({
         success: true,
         data: productTypes,

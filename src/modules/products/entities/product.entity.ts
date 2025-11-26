@@ -51,7 +51,7 @@ export class Product {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 150 })
+  @Column({ length: 150, unique: true })
   name: string;
 
   @ManyToOne(() => ProductType, { nullable: false, onDelete: 'CASCADE' })

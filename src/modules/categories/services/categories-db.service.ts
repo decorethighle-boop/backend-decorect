@@ -2,7 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CustomHttpException } from 'src/global/exceptions/custom-exception';
 import { ProductType } from 'src/modules/products/entities/product-type.entity';
-import { Product } from 'src/modules/products/entities/product.entity';
+import {
+  GeneratedVariant,
+  Product,
+} from 'src/modules/products/entities/product.entity';
 import { Repository } from 'typeorm';
 import { CreateOrUpdateCategoryValueDto } from '../dto/create-or-update-category-value.dto';
 import { CreateOrUpdateCategoryDto } from '../dto/create-or-update-category.dto';
@@ -81,8 +84,12 @@ export class CategoriesDbService {
     });
     if (!category) throw new NotFoundException('Category not found');
 
+    // Almacenar el nombre anterior para la actualización en productos
+    const oldCategoryName = category.name;
+    const newCategoryName = body.name;
+
     // 2️⃣ Update name
-    category.name = body.name;
+    category.name = newCategoryName;
 
     // 3️⃣ Validate product type
     const productType = await this.productTypesRepository.findOne({
@@ -131,19 +138,15 @@ export class CategoriesDbService {
     // 6️⃣ Save updated category
     await this.categoriesRepository.save(category);
 
-    // 7️⃣ Update products' categories JSON
-    const productsToUpdate = await this.productsRepository.find({
-      where: { productType: { id: body.productTypeId } },
-    });
-
-    for (const product of productsToUpdate) {
-      product.categories = product.categories.map(cat => ({
-        ...cat,
-        grouper: cat.category_id === category.id ? category.grouper : false,
-      }));
-
-      await this.productsRepository.save(product);
-    }
+    // 7️⃣ Update products' categories JSON (name and grouper)
+    await this.updateProductsCategoryData(
+      category.productType.id,
+      category.id,
+      newCategoryName,
+      category.grouper,
+      'category', // Indica que se actualiza el nombre de la categoría
+      oldCategoryName,
+    );
   }
 
   async deleteCategory(id: string) {
@@ -187,19 +190,39 @@ export class CategoriesDbService {
   async updateCategoryValue(body: CreateOrUpdateCategoryValueDto) {
     const categoryValue = await this.categoryValuesRepository.findOne({
       where: { id: body.id },
+      relations: ['parentCategory', 'parentCategory.productType'],
     });
+
     if (!categoryValue) throw new NotFoundException(`Category value not found`);
 
-    categoryValue.name = body.name;
-    const parentCategory = await this.categoriesRepository.findOne({
-      where: { id: body.parentCategoryId },
-    });
-    if (!parentCategory) {
-      throw new NotFoundException(`Parent category not found`);
+    const newCategoryValueName = body.name;
+    const oldCategoryValueName = categoryValue.name;
+
+    const productTypeId = categoryValue.parentCategory.productType.id;
+
+    categoryValue.name = newCategoryValueName;
+
+    if (categoryValue.parentCategory.id !== body.parentCategoryId) {
+      const parentCategory = await this.categoriesRepository.findOne({
+        where: { id: body.parentCategoryId },
+      });
+      if (!parentCategory) {
+        throw new NotFoundException(`Parent category not found`);
+      }
+      categoryValue.parentCategory = parentCategory;
     }
-    categoryValue.parentCategory = parentCategory;
 
     await this.categoryValuesRepository.save(categoryValue);
+
+    await this.updateProductsCategoryData(
+      productTypeId,
+      categoryValue.parentCategory.id,
+      newCategoryValueName,
+      undefined,
+      'value',
+      oldCategoryValueName,
+      categoryValue.id,
+    );
   }
 
   async deleteCategoryValue(id: string) {
@@ -208,5 +231,104 @@ export class CategoriesDbService {
     });
     if (!categoryValue) throw new NotFoundException(`Category value not found`);
     await this.categoryValuesRepository.remove(categoryValue);
+  }
+
+  // --------------------------------------------------------------------------------
+  // Helper para actualizar productos
+  // --------------------------------------------------------------------------------
+
+  /**
+   * Actualiza el nombre de la categoría o el valor en la data JSON de los productos.
+   * @param productTypeId ID del tipo de producto.
+   * @param categoryId ID de la categoría afectada.
+   * @param newName El nuevo nombre.
+   * @param grouper El estado 'grouper' (solo si es actualización de categoría).
+   * @param updateType 'category' para nombre de categoría, 'value' para nombre de valor.
+   * @param oldName El nombre anterior (para variantes de categoría).
+   * @param categoryValueId ID del valor de la categoría (solo si updateType es 'value').
+   */
+  private async updateProductsCategoryData(
+    productTypeId: string,
+    categoryId: string,
+    newName: string,
+    grouper: boolean | undefined,
+    updateType: 'category' | 'value',
+    oldName?: string,
+    categoryValueId?: string,
+  ) {
+    const productsToUpdate = await this.productsRepository.find({
+      where: { productType: { id: productTypeId } },
+    });
+
+    for (const product of productsToUpdate) {
+      let updatedCategories = product.categories;
+      let updatedVariants: GeneratedVariant[] = product.variants;
+      let changesMade = false;
+
+      // 1. Actualizar en `product.categories`
+      updatedCategories = updatedCategories.map(cat => {
+        if (cat.category_id === categoryId) {
+          changesMade = true;
+          if (updateType === 'category') {
+            // Actualizar nombre y grouper de la categoría
+            return { ...cat, name: newName, grouper: grouper };
+          } else if (updateType === 'value' && categoryValueId) {
+            // Actualizar nombre del valor dentro de la categoría
+            const updatedValues = cat.values.map(val => {
+              if (val.category_value_id === categoryValueId) {
+                return { ...val, name: newName };
+              }
+              return val;
+            });
+            return { ...cat, values: updatedValues };
+          }
+        }
+        return cat;
+      });
+
+      // 2. Actualizar en `product.variants`
+      updatedVariants = updatedVariants.map(variant => {
+        const updatedValues = variant.values.map(val => {
+          if (val.categoryId === categoryId) {
+            changesMade = true;
+            if (updateType === 'category') {
+              // Actualizar nombre de la categoría en variants.values
+              return { ...val, categoryName: newName };
+            } else if (updateType === 'value' && categoryValueId) {
+              // Actualizar nombre del valor en variants.values
+              if (val.valueId === categoryValueId) {
+                return { ...val, valueName: newName };
+              }
+            }
+          }
+          return val;
+        });
+
+        // NOTA: 'categories' dentro de GeneratedVariant es un array de VariantGeneratedVariantCategoryValue
+        // que solo guarda el ID y el nombre del valor, por lo que solo se actualiza si es un 'value'
+        const updatedVariantCategories = variant.categories.map(vc => {
+          if (
+            updateType === 'value' &&
+            vc.categoryValueId === categoryValueId
+          ) {
+            changesMade = true;
+            return { ...vc, name: newName };
+          }
+          return vc;
+        });
+
+        return {
+          ...variant,
+          values: updatedValues,
+          categories: updatedVariantCategories,
+        };
+      });
+
+      if (changesMade) {
+        product.categories = updatedCategories;
+        product.variants = updatedVariants;
+        await this.productsRepository.save(product);
+      }
+    }
   }
 }

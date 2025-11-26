@@ -45,6 +45,15 @@ export class ProductsDbService {
     return this.productTypesRepository.find();
   }
 
+  async getProductTypesWithProducts(): Promise<ProductType[]> {
+    return this.productTypesRepository
+      .createQueryBuilder('productType')
+      .innerJoin(Product, 'product', 'product.productType = productType.id')
+      .select('productType')
+      .distinct(true)
+      .getMany();
+  }
+
   async createProductType(body: CreateOrUpdateProductTypeDto) {
     const productType = new ProductType();
     productType.id = body.id;
