@@ -35,9 +35,20 @@ export class CreateOrUpdateProductPipe implements PipeTransform {
       throw new CustomHttpException('Categories must be an array');
     }
 
-    const grouperCount = categories.filter(c => c.grouper).length;
-    if (grouperCount > 1) {
+    const grouperCategories = categories.filter(c => c.grouper);
+    if (grouperCategories.length > 1) {
       throw new CustomHttpException('Only one category can be a grouper');
+    }
+
+    if (grouperCategories.length === 1) {
+      const grouper = grouperCategories[0];
+      const allHaveImages = grouper.values.every(v => v.images);
+
+      if (!allHaveImages) {
+        throw new CustomHttpException(
+          `Category "${grouper.name}" is a grouper and all its values must include images`,
+        );
+      }
     }
 
     categories.forEach((category: VariantCategoriesDto) => {

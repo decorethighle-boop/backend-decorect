@@ -20,54 +20,65 @@ export function fromProductsToProductsVariantsResponse(
     const grouperCategory = product.categories.find(cat => cat.grouper);
     if (!grouperCategory) return;
 
-    // ¿El filter corresponde a un valor del grouper?
+    // Encontramos el value si coincide con categoryValueId
+    const foundValue = categoryValueId
+      ? product.categories
+          .flatMap(c => c.values.map(v => ({ category: c, value: v })))
+          .find(({ value }) => value.category_value_id === categoryValueId)
+      : undefined;
+
+    // Si el filtrado viene por un value con imágenes → usar ese value como agrupador
+    const overrideGrouperValue =
+      foundValue && foundValue.value.images ? foundValue : undefined;
+
+    // Si debemos sustituir la categoría agrupadora original
+    const effectiveGrouper = overrideGrouperValue
+      ? {
+          category: overrideGrouperValue.category,
+          values: [overrideGrouperValue.value],
+        }
+      : {
+          category: grouperCategory,
+          values: grouperCategory.values,
+        };
+
+    // Identificar si el filtro coincide con el "agrupador efectivo"
     const filterIsGrouper = Boolean(
       categoryValueId &&
-        grouperCategory.values.some(
+        effectiveGrouper.values.some(
           v => v.category_value_id === categoryValueId,
         ),
     );
 
-    // Si el filtro NO es de la agrupadora, buscamos el valor en las demás categorías
+    // Obtener reglas si el filtro NO es del agrupador
     let filterValueRules: Record<string, string[]> | undefined = undefined;
-    if (categoryValueId && !filterIsGrouper) {
-      // encontramos el value (si existe) en cualquier categoría del producto
-      const found = product.categories
-        .flatMap(c => c.values.map(v => ({ category: c, value: v })))
-        .find(({ value }) => value.category_value_id === categoryValueId);
 
-      if (!found) {
-        // si el producto no contiene ese categoryValueId, ignoramos este producto
-        return;
-      }
-
-      // guardamos sus rules (pueden ser undefined)
-      // NOTE: la estructura de `rules` en tu ejemplo es { "<grouper_category_id>": ["<grouper_value_id>", ...] }
-      filterValueRules = (found.value as any).rules;
+    if (categoryValueId && !filterIsGrouper && foundValue) {
+      filterValueRules = (foundValue.value as any).rules;
     }
 
-    grouperCategory.values.forEach(grouperValue => {
-      // Decisión: incluir o no esta variante según el filtro
+    // Recorrer valores del agrupador efectivo
+    effectiveGrouper.values.forEach(grouperValue => {
+      // Aplicar lógica de inclusión
       if (!categoryValueId) {
         // sin filtro: incluir todo
       } else if (filterIsGrouper) {
-        // filtro por valor de la agrupadora: incluir sólo si coinciden
+        // filtrar por valor del agrupador efectivo
         if (grouperValue.category_value_id !== categoryValueId) return;
       } else {
-        // filtro por otra categoría: respetar rules del value filtrado
+        // filtro por otra categoría → aplicar rules
         if (filterValueRules) {
           const allowedForThisGrouper =
-            filterValueRules[grouperCategory.category_id];
-          // Si hay un entry explícito para la agrupadora, entonces la inclusión depende de él.
+            filterValueRules[effectiveGrouper.category.category_id];
+
           if (Array.isArray(allowedForThisGrouper)) {
             if (!allowedForThisGrouper.includes(grouperValue.category_value_id))
               return;
           }
-          // Si no existe la key para la agrupadora en rules -> se asume aplica a cualquier variante -> incluir
         }
-        // Si filterValueRules es undefined -> no hay rules -> aplica a cualquier variante -> incluir
       }
 
+      // Construir variante
       variants.push({
         productId: product.id,
         categoryValueId: grouperValue.category_value_id,

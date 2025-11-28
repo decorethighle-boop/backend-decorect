@@ -18,7 +18,6 @@ export class TokenMiddleware implements NestMiddleware {
       { path: '/categories/values', method: 'GET' },
       { path: '/products', method: 'GET' },
       { path: '/products/:id', method: 'GET' },
-      { path: '/products/:id', method: 'DELETE' },
     ];
 
     const routeIsOptional = optionalAuthRoutes.some(route => {

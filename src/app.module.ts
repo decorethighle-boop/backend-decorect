@@ -21,6 +21,9 @@ import { ProductType } from './modules/products/entities/product-type.entity';
 import { Product } from './modules/products/entities/product.entity';
 import { ProductsModule } from './modules/products/products.module';
 import { RangesModule } from './modules/ranges/ranges.module';
+import { WishlistsController } from './modules/wishlist/controllers/wishlists.controller';
+import { Wishlist } from './modules/wishlist/entities/wishlist.entity';
+import { WishlistModule } from './modules/wishlist/wishlist.module';
 
 config({ path: ['.env'] });
 
@@ -43,6 +46,7 @@ config({ path: ['.env'] });
         CategoryValue,
         ProductType,
         Product,
+        Wishlist,
       ],
       synchronize: true,
       autoLoadEntities: true,
@@ -51,6 +55,7 @@ config({ path: ['.env'] });
     ProductsModule,
     CategoriesModule,
     RangesModule,
+    WishlistModule,
   ],
   providers: [AppService],
 })
@@ -59,6 +64,11 @@ export class AppModule implements NestModule {
     consumer
       .apply(TokenMiddleware)
       .exclude({ path: '/auth/login', method: RequestMethod.POST })
-      .forRoutes(AuthController, CategoriesController, ProductsController);
+      .forRoutes(
+        AuthController,
+        CategoriesController,
+        ProductsController,
+        WishlistsController,
+      );
   }
 }
