@@ -25,6 +25,7 @@ interface VariantCategoryValue {
 interface VariantCategory {
   category_id: string;
   name: string;
+  canSelect: boolean;
   grouper?: boolean;
   depends_on: boolean;
   values: VariantCategoryValue[];

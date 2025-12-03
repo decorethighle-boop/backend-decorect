@@ -159,11 +159,48 @@ export class CategoriesDbService {
   // Categories Values
   // --------------------------------------------------------------------------------
 
-  async getCategoryValuesGrouped(productTypeId: string) {
-    const categoryValues = await this.categoryValuesRepository
+  async getCategoryValuesGrouped(
+    productTypeId: string,
+    user: any,
+    all: boolean,
+  ) {
+    const qb = this.categoryValuesRepository
       .createQueryBuilder('categoryValue')
       .leftJoinAndSelect('categoryValue.parentCategory', 'parentCategory')
-      .where('parentCategory.productType = :productTypeId', { productTypeId })
+      .where('parentCategory.productType = :productTypeId', { productTypeId });
+
+    if (user?.parentRole?.hierarchy !== 2 || !all) {
+      qb.andWhere(
+        `
+      EXISTS (
+        SELECT 1
+        FROM products p
+        WHERE p.product_type_id = :productTypeId
+        AND (
+          jsonb_path_exists(
+            p.categories,
+            CONCAT(
+              '$[*].values[*] ? (@.category_value_id == "',
+              categoryValue.id,
+              '")'
+            )::jsonpath
+          )
+          OR
+          jsonb_path_exists(
+            p.variants,
+            CONCAT(
+              '$[*].values[*] ? (@.valueId == "',
+              categoryValue.id,
+              '")'
+            )::jsonpath
+          )
+        )
+      )
+    `,
+      );
+    }
+
+    const categoryValues = await qb
       .orderBy('parentCategory.name', 'ASC')
       .addOrderBy('categoryValue.name', 'ASC')
       .getMany();

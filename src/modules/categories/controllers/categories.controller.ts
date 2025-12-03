@@ -132,6 +132,7 @@ export class CategoriesController {
       const categoryValues = await this.service.getCategoryValuesGrouped(
         filters.productTypeId,
         user,
+        filters.all,
       );
       return res.status(HttpStatus.OK).json({
         success: true,

@@ -96,6 +96,9 @@ export class VariantCategoriesDto {
   @IsNotEmpty()
   name: string;
 
+  @IsBoolean()
+  canSelect: boolean;
+
   @IsOptional()
   @IsBoolean()
   grouper?: boolean;

@@ -54,9 +54,12 @@ export class CategoriesService {
   // Categories Values
   // --------------------------------------------------------------------------------
 
-  async getCategoryValuesGrouped(productTypeId: string, user: any) {
-    const categoryValues =
-      await this.db.getCategoryValuesGrouped(productTypeId);
+  async getCategoryValuesGrouped(productTypeId: string, user: any, all = true) {
+    const categoryValues = await this.db.getCategoryValuesGrouped(
+      productTypeId,
+      user,
+      all,
+    );
 
     const grouped = categoryValues.reduce(
       (acc, cv) => {
