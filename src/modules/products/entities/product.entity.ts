@@ -33,6 +33,7 @@ interface VariantCategory {
 
 export interface GeneratedVariant {
   name: string;
+  inAWishlist: boolean;
   values: {
     categoryId: string;
     categoryName: string;

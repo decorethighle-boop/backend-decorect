@@ -134,16 +134,49 @@ export class ProductsService {
     };
   }
 
-  async getProductById(id: string) {
-    return this.db.getProductById(id);
+  async getProductById(id: string, withCategories: boolean, user?: any) {
+    const product = await this.db.getProductById(id);
+
+    if (
+      !product ||
+      !product.variants ||
+      !product.categories ||
+      (user?.parentRole.hierarchy == 2 && withCategories)
+    ) {
+      return product;
+    }
+
+    const usedValueIds = new Set<string>();
+    product.variants.forEach(variant => {
+      variant.values.forEach(val => {
+        usedValueIds.add(val.valueId);
+      });
+    });
+
+    product.categories = product.categories.map(category => {
+      if (category.depends_on === true) {
+        const filteredValues = category.values.filter(val =>
+          usedValueIds.has(val.category_value_id),
+        );
+
+        return {
+          ...category,
+          values: filteredValues,
+        };
+      }
+
+      return category;
+    });
+
+    return product;
   }
 
   async createProduct(body: CreateOrUpdateProductDto) {
     await this.db.createProduct(body);
   }
 
-  async updateProduct(body: CreateOrUpdateProductDto) {
-    await this.db.updateProduct(body);
+  async updateProduct(body: CreateOrUpdateProductDto, force: boolean) {
+    await this.db.updateProduct(body, force);
   }
 
   async deleteProduct(id: string) {

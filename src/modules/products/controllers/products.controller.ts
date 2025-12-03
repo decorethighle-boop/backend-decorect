@@ -142,9 +142,18 @@ export class ProductsController {
   }
 
   @Get('/:id')
-  async getProduct(@Param('id') id: string, @Res() res: Response) {
+  async getProduct(
+    @Param('id') id: string,
+    @Query('with-categories') withCategories: boolean = true,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
     try {
-      const product = await this.service.getProductById(id);
+      const product = await this.service.getProductById(
+        id,
+        withCategories,
+        req['user'],
+      );
       return res.status(HttpStatus.OK).json({
         success: true,
         data: product,
@@ -185,11 +194,12 @@ export class ProductsController {
   @UsePipes(CreateOrUpdateProductPipe)
   async updateProduct(
     @Param('id') id: string,
+    @Query('force') force: boolean = false,
     @Body() body: CreateOrUpdateProductDto,
     @Res() res: Response,
   ) {
     try {
-      await this.service.updateProduct({ ...body, id: id });
+      await this.service.updateProduct({ ...body, id: id }, force);
       return res.status(HttpStatus.OK).json({
         success: true,
         data: null,

@@ -177,22 +177,60 @@ export class CategoriesDbService {
         FROM products p
         WHERE p.product_type_id = :productTypeId
         AND (
-          jsonb_path_exists(
-            p.categories,
-            CONCAT(
-              '$[*].values[*] ? (@.category_value_id == "',
-              categoryValue.id,
-              '")'
-            )::jsonpath
+          -- Condición 1: El categoryValue está en alguna variante
+          (
+            -- Buscar en variant.categories (array de objetos)
+            jsonb_path_exists(
+              p.variants,
+              CONCAT(
+                '$[*].categories[*] ? (@.categoryValueId == "',
+                categoryValue.id,
+                '")'
+              )::jsonpath
+            )
+            OR
+            -- Buscar en variant.values (array de objetos)
+            jsonb_path_exists(
+              p.variants,
+              CONCAT(
+                '$[*].values[*] ? (@.valueId == "',
+                categoryValue.id,
+                '")'
+              )::jsonpath
+            )
           )
           OR
-          jsonb_path_exists(
-            p.variants,
-            CONCAT(
-              '$[*].values[*] ? (@.valueId == "',
-              categoryValue.id,
-              '")'
-            )::jsonpath
+          -- Condición 2: La categoría padre tiene depends_on = false y el categoryValue está en alguna variante
+          (
+            jsonb_path_exists(
+              p.categories,
+              CONCAT(
+                '$[*] ? (@.category_id == "',
+                parentCategory.id,
+                '" && @.depends_on == false)'
+              )::jsonpath
+            )
+            AND
+            -- Verificar que el categoryValue está en alguna variante del mismo producto
+            (
+              jsonb_path_exists(
+                p.variants,
+                CONCAT(
+                  '$[*].categories[*] ? (@.categoryValueId == "',
+                  categoryValue.id,
+                  '")'
+                )::jsonpath
+              )
+              OR
+              jsonb_path_exists(
+                p.variants,
+                CONCAT(
+                  '$[*].values[*] ? (@.valueId == "',
+                  categoryValue.id,
+                  '")'
+                )::jsonpath
+              )
+            )
           )
         )
       )

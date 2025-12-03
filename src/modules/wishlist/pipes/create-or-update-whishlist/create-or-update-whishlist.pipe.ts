@@ -19,7 +19,7 @@ export class CreateOrUpdateWishlistPipe implements PipeTransform {
       throw new CustomHttpException('Wishlist must have a name');
     }
 
-    if (!products || !Array.isArray(products) || products.length === 0) {
+    if (!products || !Array.isArray(products)) {
       throw new CustomHttpException('Products must be an array');
     }
 

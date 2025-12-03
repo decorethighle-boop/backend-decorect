@@ -154,4 +154,18 @@ export class WishlistService {
   async delete(id: string, token: any) {
     await this.db.delete(id, token);
   }
+
+  async removeProductFromWishlist(
+    wishlistId: string,
+    productId: string,
+    variantName: string,
+    token: any,
+  ) {
+    await this.db.removeProductFromWishlist(
+      wishlistId,
+      productId,
+      variantName,
+      token,
+    );
+  }
 }

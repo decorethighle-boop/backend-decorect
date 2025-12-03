@@ -144,4 +144,34 @@ export class WishlistsController {
       });
     }
   }
+
+  @Delete('/:id/products/:productId/:variantName')
+  async removeProductFromWishlist(
+    @Param('id') id: string,
+    @Param('productId') productId: string,
+    @Param('variantName') variantName: string,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    try {
+      await this.service.removeProductFromWishlist(
+        id,
+        productId,
+        variantName,
+        req['user'],
+      );
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: null,
+        message: 'Product variant removed from Wishlist',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message:
+          error.message || 'Error removing product variant from Wishlist',
+      });
+    }
+  }
 }
