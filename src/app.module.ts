@@ -20,6 +20,7 @@ import { ProductsController } from './modules/products/controllers/products.cont
 import { ProductType } from './modules/products/entities/product-type.entity';
 import { Product } from './modules/products/entities/product.entity';
 import { ProductsModule } from './modules/products/products.module';
+import { RangesController } from './modules/ranges/controllers/ranges.controller';
 import { RangesModule } from './modules/ranges/ranges.module';
 import { WishlistsController } from './modules/wishlist/controllers/wishlists.controller';
 import { Wishlist } from './modules/wishlist/entities/wishlist.entity';
@@ -69,6 +70,7 @@ export class AppModule implements NestModule {
         CategoriesController,
         ProductsController,
         WishlistsController,
+        RangesController,
       );
   }
 }

@@ -17,9 +17,11 @@ import { CreateOrUpdateProductTypeDto } from '../dto/create-or-update-product-ty
 import { CreateOrUpdateProductDto } from '../dto/create-or-update-product.dto';
 import { CreateOrUpdateProductTypesPipe } from '../pipes/create-or-update-product-types/create-or-update-product-types.pipe';
 import { CreateOrUpdateProductPipe } from '../pipes/create-or-update-product/create-or-update-product.pipe';
+import { GetProductVariantsPipe } from '../pipes/get-product-variants/get-product-variants.pipe';
 import { GetProductsPipe } from '../pipes/get-products/get-products.pipe';
 import { ProductsService } from '../services/products.service';
 import type { FilterProducts } from '../types/filter-products.type';
+import type { FilterVariants } from '../types/filter-variant.type';
 
 @Controller('products')
 export class ProductsController {
@@ -106,6 +108,31 @@ export class ProductsController {
         success: false,
         data: null,
         message: error.message || 'Error deleting product type',
+      });
+    }
+  }
+
+  //------------------------------------------------------------------------------
+  // Product Variants
+  //------------------------------------------------------------------------------
+
+  @Get('/variants')
+  @UsePipes(GetProductVariantsPipe)
+  async getVariants(@Query() filters: FilterVariants, @Res() res: Response) {
+    try {
+      const variants = await this.service.getVariants({
+        ...filters,
+      });
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: variants,
+        message: 'Variants fetched',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message: error.message || 'Error getting variants',
       });
     }
   }

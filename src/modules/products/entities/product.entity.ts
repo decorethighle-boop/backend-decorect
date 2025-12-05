@@ -72,3 +72,15 @@ export class Product {
   @Column({ type: 'jsonb', nullable: false })
   variants: GeneratedVariant[];
 }
+
+export interface ProductVariantResponse {
+  id: string; // productId
+  name: string;
+  variants: VariantsResponse[];
+}
+
+export interface VariantsResponse {
+  name: string;
+  mainPhoto: string;
+  categoriyValues: VariantGeneratedVariantCategoryValue[];
+}
