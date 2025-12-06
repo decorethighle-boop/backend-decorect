@@ -10,11 +10,13 @@ import {
   Query,
   Req,
   Res,
+  UsePipes,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { CreateOrUpdateProductsRangeDto } from '../dto/create-or-update-range.dto';
 import { CreateOrUpdateRangeGroupDto } from '../dto/create-or-update-reange-group.dto';
 
+import { GetRangesPipe } from '../pipes/get-ranges/get-ranges.pipe';
 import { RangesService } from '../services/ranges.service';
 import { type FilterRangeGroups } from '../types/filter-range-groups';
 import { type FilterRanges } from '../types/filter-ranges';
@@ -113,6 +115,7 @@ export class RangesController {
   // Ranges
   //------------------------------------------------------------------------------
   @Get()
+  @UsePipes(GetRangesPipe)
   async getRanges(
     @Query() filters: FilterRanges,
     @Res() res: Response,

@@ -47,8 +47,10 @@ export class CreateOrUpdateProductsRangeDto {
   @IsString()
   description: string;
 
-  @IsUUID()
-  groupId: string;
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  groupIds?: string[];
 
   @IsArray()
   @ValidateNested({ each: true })

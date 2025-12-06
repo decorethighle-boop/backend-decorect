@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CreateOrUpdateProductsRangeDto } from '../dto/create-or-update-range.dto';
 import { CreateOrUpdateRangeGroupDto } from '../dto/create-or-update-reange-group.dto';
 import { ProductsRange } from '../entities/range.entity';
@@ -47,29 +47,60 @@ export class RangesDbService {
   async getRangeById(id: string) {
     return this.rangesRepository.findOne({
       where: { id },
-      relations: ['group'],
+      relations: ['groups'],
     });
   }
 
   async createRange(rangeDto: CreateOrUpdateProductsRangeDto) {
-    const group = await this.rangeGroupsRepository.findOne({
-      where: { id: rangeDto.groupId },
-    });
+    let groups = <RangeGroup[]>[];
 
-    if (!group) {
-      throw new Error('RangeGroup not found');
+    if (rangeDto.groupIds?.length) {
+      groups = await this.rangeGroupsRepository.findBy({
+        id: In(rangeDto.groupIds),
+      });
+
+      if (groups.length !== rangeDto.groupIds.length) {
+        throw new Error('Some RangeGroup IDs were not found');
+      }
     }
 
     const range = this.rangesRepository.create({
       ...rangeDto,
-      group,
+      groups,
     });
 
     await this.rangesRepository.save(range);
+
+    return range;
   }
 
-  async updateRange(range: CreateOrUpdateProductsRangeDto) {
-    await this.rangesRepository.save(range);
+  async updateRange(rangeDto: CreateOrUpdateProductsRangeDto) {
+    const existingRange = await this.rangesRepository.findOne({
+      where: { id: rangeDto.id },
+      relations: ['groups'],
+    });
+
+    if (!existingRange) {
+      throw new Error(`Rangenot found`);
+    }
+
+    let groups: RangeGroup[] = [];
+    if (rangeDto.groupIds?.length) {
+      groups = await this.rangeGroupsRepository.findBy({
+        id: In(rangeDto.groupIds),
+      });
+
+      if (groups.length !== rangeDto.groupIds.length) {
+        throw new Error('Some RangeGroup IDs were not found');
+      }
+    }
+
+    Object.assign(existingRange, rangeDto);
+    existingRange.groups = groups;
+
+    await this.rangesRepository.save(existingRange);
+
+    return existingRange;
   }
 
   async deleteRange(id: string) {

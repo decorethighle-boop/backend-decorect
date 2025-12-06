@@ -1,8 +1,8 @@
 import {
   Column,
   Entity,
-  JoinColumn,
-  ManyToOne,
+  JoinTable,
+  ManyToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { RangeGroup } from './ranges-group.entity';
@@ -27,9 +27,13 @@ export class ProductsRange {
   @Column({ type: 'jsonb', nullable: false })
   variants: ProductRangeVariant[];
 
-  @ManyToOne(() => RangeGroup, { nullable: false, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'group_id' })
-  group: RangeGroup;
+  @ManyToMany(() => RangeGroup, { nullable: true })
+  @JoinTable({
+    name: 'range_group_ranges',
+    joinColumn: { name: 'range_id' },
+    inverseJoinColumn: { name: 'group_id' },
+  })
+  groups: RangeGroup[];
 }
 
 export interface ProductRangeVariant {

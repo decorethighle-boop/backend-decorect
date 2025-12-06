@@ -10,6 +10,9 @@ import { FilterRangeGroups } from '../types/filter-range-groups';
 import { FilterRanges } from '../types/filter-ranges';
 import { RangesDbService } from './ranges-db.service';
 
+const WITHOUT_GROUP_ID = 'without-group';
+const WITHOUT_GROUP_NAME = 'Without group';
+
 @Injectable()
 export class RangesService {
   constructor(private readonly db: RangesDbService) {}
@@ -61,13 +64,11 @@ export class RangesService {
   // Ranges
   //------------------------------------------------------------------------------
 
-  async getRanges({ page = 1, search, all = false }: FilterRanges, token: any) {
+  async getRanges({ page = 1, search, all }: FilterRanges, token: any) {
     const limit = 10;
     const skip = (page - 1) * limit;
 
-    // Determinar si debemos incluir grupos sin rangos
-    // const includeEmptyGroups = token?.parentRole?.hierarchy === 2 && all;
-    const includeEmptyGroups = true;
+    const includeEmptyGroups = token?.parentRole?.hierarchy === 2 && all;
 
     let result: RangeGroupResponse[];
     let total: number;
@@ -103,7 +104,7 @@ export class RangesService {
   }
 
   /* ---------------------------
-   Caso sin search: comportamiento actual
+   Caso sin search: comportamiento actual + grupo "without group"
    --------------------------- */
   private async getRangesByGroups(
     limit: number,
@@ -114,15 +115,16 @@ export class RangesService {
 
     // Si NO se incluyen grupos vacíos, filtrar solo los que tengan ranges
     if (!includeEmptyGroups) {
-      const subQuery = this.db
-        .getRangesQueryBuilder()
-        .select('DISTINCT ranges.group_id');
-
-      groupsQB.where(`range_groups.id IN (${subQuery.getQuery()})`);
+      // Usamos la tabla pivote (range_group_ranges) para saber si existen ranges asociados
+      groupsQB.where(
+        `EXISTS (SELECT 1 FROM range_group_ranges rgr WHERE rgr.group_id = range_groups.id)`,
+      );
     }
 
-    const total = await groupsQB.getCount();
+    // Obtener conteo de grupos (solo los reales de DB)
+    const dbGroupsTotal = await groupsQB.getCount();
 
+    // Obtener página de grupos desde la DB (paginación DB)
     const groups = await groupsQB
       .orderBy('range_groups.name', 'ASC')
       .take(limit)
@@ -130,22 +132,72 @@ export class RangesService {
       .getMany();
 
     if (!groups.length) {
+      // Aún así puede haber ranges sin grupo => devolver solo grupo sintético si existe
+      const ungroupedRanges = await this.fetchUngroupedRanges();
+      if (ungroupedRanges.length) {
+        const withoutGroup: RangeGroupResponse = {
+          id: WITHOUT_GROUP_ID,
+          name: WITHOUT_GROUP_NAME,
+          ranges: ungroupedRanges.map(r => ({
+            id: r.id,
+            name: r.name,
+            imageBanner: r.imageBanner,
+          })),
+        };
+        // total será 1 (solo el grupo sintético)
+        return { data: [withoutGroup], total: 1 };
+      }
+
       return { data: [], total: 0 };
     }
 
     const groupIds = groups.map(g => g.id);
+
+    // Traer ranges que pertenezcan a estos groupIds
     const ranges = await this.fetchRangesByGroupIds(groupIds);
 
+    // Agrupar ranges por groupId y también guardar los sin grupo bajo WITHOUT_GROUP_ID
     const rangesByGroup = this.groupRangesByGroupId(ranges);
 
-    const data = groups.map(g => ({
+    // Mapear grupos reales
+    const dataForDbGroups: RangeGroupResponse[] = groups.map(g => ({
       id: g.id,
       name: g.name,
       ranges: rangesByGroup[g.id] ?? [],
     }));
 
+    // Si estamos en la primera página (skip === 0) añadimos el grupo sintético al resultado (si tiene ranges)
+    let finalData = dataForDbGroups;
+    let total = dbGroupsTotal;
+
+    if (skip === 0) {
+      const ungroupedRanges = await this.fetchUngroupedRanges();
+      if (ungroupedRanges.length) {
+        const withoutGroup: RangeGroupResponse = {
+          id: WITHOUT_GROUP_ID,
+          name: WITHOUT_GROUP_NAME,
+          ranges: ungroupedRanges.map(r => ({
+            id: r.id,
+            name: r.name,
+            imageBanner: r.imageBanner,
+          })),
+        };
+
+        // Añadir al final (puedes cambiar el orden si prefieres que vaya al inicio)
+        finalData = [...dataForDbGroups, withoutGroup];
+
+        // Ajustar total para incluir el grupo sintético
+        total = dbGroupsTotal + 1;
+      }
+    }
+
+    // Si includeEmptyGroups === false, filtrar grupos sin ranges (sólo en la data real, ya hemos aplicado DB filter)
+    const outputData = includeEmptyGroups
+      ? finalData
+      : finalData.filter(g => g.ranges.length > 0);
+
     return {
-      data: includeEmptyGroups ? data : data.filter(g => g.ranges.length > 0),
+      data: outputData,
       total,
     };
   }
@@ -155,10 +207,21 @@ export class RangesService {
   ): Promise<ProductsRange[]> {
     if (!groupIds?.length) return [];
 
+    // Unimos la relación many-to-many (unidireccional) desde ranges -> groups
     return this.db
       .getRangesQueryBuilder()
-      .leftJoinAndSelect('ranges.group', 'group')
-      .where('ranges.group_id IN (:...groupIds)', { groupIds })
+      .leftJoinAndSelect('ranges.groups', 'group')
+      .where('group.id IN (:...groupIds)', { groupIds })
+      .getMany();
+  }
+
+  // Obtener ranges sin grupo (para el grupo sintético)
+  private async fetchUngroupedRanges(): Promise<ProductsRange[]> {
+    // Ranges que NO tienen asociación en la tabla pivote -> group.id IS NULL tras leftJoin
+    return this.db
+      .getRangesQueryBuilder()
+      .leftJoinAndSelect('ranges.groups', 'group')
+      .where('group.id IS NULL')
       .getMany();
   }
 
@@ -171,10 +234,10 @@ export class RangesService {
     skip: number,
     includeEmptyGroups: boolean = false,
   ): Promise<{ data: RangeGroupResponse[]; total: number }> {
-    // Paso 1 — Buscar ranges que coincidan por nombre
+    // Paso 1 — Buscar ranges que coincidan por nombre (y traer sus grupos)
     const matchingRanges = await this.db
       .getRangesQueryBuilder()
-      .leftJoinAndSelect('ranges.group', 'group')
+      .leftJoinAndSelect('ranges.groups', 'group')
       .where('ranges.name ILIKE :search', { search: `%${search}%` })
       .getMany();
 
@@ -182,29 +245,52 @@ export class RangesService {
       return { data: [], total: 0 };
     }
 
-    // Agrupar ranges por groupId
+    // Agrupar ranges por groupId (incluye sin grupo bajo WITHOUT_GROUP_ID)
     const rangesByGroup = this.groupRangesByGroupId(matchingRanges);
 
-    const groupIds = Object.keys(rangesByGroup);
+    // Todos los groupIds reales encontrados
+    const realGroupIds = Object.keys(rangesByGroup).filter(
+      id => id !== WITHOUT_GROUP_ID,
+    );
 
-    // Paso 2 — Obtener los grupos a los que pertenecen
+    // Paso 2 — Obtener los grupos a los que pertenecen (solo los reales)
     let groupsQuery = this.db
       .getRangeGroupsQueryBuilder()
-      .where('range_groups.id IN (:...groupIds)', { groupIds })
+      .where('range_groups.id IN (:...groupIds)', {
+        groupIds: realGroupIds.length ? realGroupIds : ['__NONE__'],
+      })
       .orderBy('range_groups.name', 'ASC');
 
-    const total = await groupsQuery.getCount();
+    // Cantidad de grupos reales
+    const dbGroupsTotal = realGroupIds.length
+      ? await groupsQuery.getCount()
+      : 0;
 
     const groups = await groupsQuery.take(limit).skip(skip).getMany();
 
-    const data = groups.map(g => ({
+    const dataForDbGroups: RangeGroupResponse[] = groups.map(g => ({
       id: g.id,
       name: g.name,
       ranges: rangesByGroup[g.id] ?? [],
     }));
 
+    // Si estamos en la primera página, añadir grupo sintético si hay ranges sin grupo
+    let finalData = dataForDbGroups;
+    let total = dbGroupsTotal;
+
+    if (skip === 0 && rangesByGroup[WITHOUT_GROUP_ID]?.length) {
+      const withoutGroup: RangeGroupResponse = {
+        id: WITHOUT_GROUP_ID,
+        name: WITHOUT_GROUP_NAME,
+        ranges: rangesByGroup[WITHOUT_GROUP_ID],
+      };
+
+      finalData = [...dataForDbGroups, withoutGroup];
+      total = dbGroupsTotal + 1;
+    }
+
     return {
-      data,
+      data: finalData,
       total,
     };
   }
@@ -215,20 +301,34 @@ export class RangesService {
   private groupRangesByGroupId(
     ranges: ProductsRange[],
   ): Record<string, RangeResponse[]> {
-    return ranges.reduce((acc, r) => {
-      const gid = r.group?.id;
-      if (!gid) return acc;
+    return ranges.reduce(
+      (acc, r) => {
+        // Si el range no tiene groups (o vacíos), lo agregamos al grupo sintético
+        if (!r.groups || !r.groups.length) {
+          if (!acc[WITHOUT_GROUP_ID]) acc[WITHOUT_GROUP_ID] = [];
+          acc[WITHOUT_GROUP_ID].push({
+            id: r.id,
+            name: r.name,
+            imageBanner: r.imageBanner,
+          });
+          return acc;
+        }
 
-      if (!acc[gid]) acc[gid] = [];
+        // Si tiene varios grupos, agregamos una entrada por cada grupo
+        for (const g of r.groups) {
+          if (!g?.id) continue;
+          if (!acc[g.id]) acc[g.id] = [];
+          acc[g.id].push({
+            id: r.id,
+            name: r.name,
+            imageBanner: r.imageBanner,
+          });
+        }
 
-      acc[gid].push({
-        id: r.id,
-        name: r.name,
-        imageBanner: r.imageBanner,
-      });
-
-      return acc;
-    }, {});
+        return acc;
+      },
+      {} as Record<string, RangeResponse[]>,
+    );
   }
 
   async getRangeById(id: string) {
