@@ -29,6 +29,24 @@ import { type FilterWishlists } from '../types/filter-whislists';
 export class WishlistsController {
   constructor(private readonly service: WishlistService) {}
 
+  @Get('has-wishlists')
+  async hasWishlists(@Req() req: Request, @Res() res: Response) {
+    try {
+      const hasWishlists = await this.service.hasWishlists(req['user']);
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: hasWishlists,
+        message: 'Wishlists fetched',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: false,
+        message: error.message || 'Error fetching Wishlists',
+      });
+    }
+  }
+
   @Get('')
   @UsePipes(GetWishlistsPipe)
   async getWishlists(

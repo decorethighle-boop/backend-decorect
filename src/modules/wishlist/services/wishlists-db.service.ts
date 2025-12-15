@@ -22,6 +22,22 @@ export class WishlistDbService {
     private readonly productsRepository: Repository<Product>,
   ) {}
 
+  async getHasWishlists(token: any) {
+    const user = await this.userRepository.findOne({
+      where: { id: token.sub },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return await this.wishlistRepository
+      .createQueryBuilder('wishlist')
+      .where('wishlist.user_id = :userId', { userId: user.id })
+      .limit(1)
+      .getExists();
+  }
+
   async getWishlistsQueryBuilder(justNames: boolean, token: any) {
     const qb = this.wishlistRepository
       .createQueryBuilder('wishlist')

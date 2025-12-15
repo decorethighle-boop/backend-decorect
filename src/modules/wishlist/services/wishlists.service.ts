@@ -21,6 +21,10 @@ export class WishlistService {
     private readonly productsDbService: ProductsDbService,
   ) {}
 
+  async hasWishlists(token: any) {
+    return this.db.getHasWishlists(token);
+  }
+
   async getWishlists(
     { page = 1, search, justNames }: FilterWishlists,
     token: any,
