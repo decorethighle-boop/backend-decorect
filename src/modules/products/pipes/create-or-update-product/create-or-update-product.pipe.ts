@@ -64,6 +64,7 @@ export class CreateOrUpdateProductPipe implements PipeTransform {
         );
       }
     });
+
     return value;
   }
 }

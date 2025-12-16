@@ -37,15 +37,8 @@ export class CreateOrUpdateProductDto {
   })
   description: string;
 
-  @IsString({ message: 'productionCountry must be a string' })
-  @Length(2, 60, {
-    message: 'productionCountry must be between 2 and 60 characters long',
-  })
-  @Transform(({ value }) => {
-    if (typeof value !== 'string') return value;
-    return value.trim().toUpperCase();
-  })
-  productionCountry: string;
+  @IsUUID('4', { message: 'id must be a valid UUID (v4)' })
+  productionCountryId: string;
 
   @IsArray()
   @ValidateNested({ each: true })

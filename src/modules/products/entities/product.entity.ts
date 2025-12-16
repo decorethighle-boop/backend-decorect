@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+import { ProductionCountry } from '../../production_countries/entities/production-country.entity';
 import { ProductType } from './product-type.entity';
 
 interface VariantCompatibility {
@@ -63,8 +64,9 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ length: 120, name: 'production_country', nullable: true })
-  productionCountry: string;
+  @ManyToOne(() => ProductionCountry, { nullable: false, eager: true })
+  @JoinColumn({ name: 'production_country_id' })
+  productionCountry: ProductionCountry;
 
   @Column({ type: 'jsonb', nullable: false })
   categories: VariantCategory[];
@@ -74,7 +76,7 @@ export class Product {
 }
 
 export interface ProductVariantResponse {
-  id: string; // productId
+  id: string;
   name: string;
   variants: VariantsResponse[];
 }
