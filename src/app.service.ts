@@ -55,15 +55,15 @@ export class AppService implements OnModuleInit {
     const permissionGroups = [
       {
         group: 'users',
-        actions: ['create', 'edit', 'delete'],
+        actions: ['create', 'update', 'delete'],
       },
       {
         group: 'products',
-        actions: ['create', 'edit', 'delete'],
+        actions: ['create', 'update', 'delete'],
       },
       {
-        group: 'ranks',
-        actions: ['create', 'edit', 'delete'],
+        group: 'ranges',
+        actions: ['create', 'update', 'delete'],
       },
     ];
 

@@ -15,7 +15,7 @@ export class Role {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 100 })
+  @Column({ length: 100, unique: true })
   name: string;
 
   @ManyToOne(() => ParentRole, { onDelete: 'RESTRICT', nullable: false })

@@ -27,15 +27,15 @@ export class ProductionCountryService {
 
     query.take(limit).skip(skip);
 
-    const [productionCountries] = await query.getManyAndCount();
+    const [productionCountries, total] = await query.getManyAndCount();
 
     return {
       productionCountries,
       metadata: {
-        total: productionCountries.length,
+        total,
         page,
-        lastPage: Math.ceil(productionCountries.length / limit),
-        hasNextPage: page * limit < productionCountries.length,
+        lastPage: Math.ceil(total / limit),
+        hasNextPage: page * limit < total,
       },
     };
   }
