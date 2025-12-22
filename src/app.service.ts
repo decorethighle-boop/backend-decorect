@@ -32,6 +32,7 @@ export class AppService implements OnModuleInit {
     const parentRoleRepository = this.dataSource.getRepository(ParentRole);
 
     const defaultParentRoles = [
+      //TODO: Ponerlos en mayuscula
       { name: 'user', hierarchy: 1 },
       { name: 'admin', hierarchy: 2 },
     ];

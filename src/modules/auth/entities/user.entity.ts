@@ -32,7 +32,7 @@ export class User {
 
   @ManyToOne(() => Role, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'role_id' })
-  role: Role;
+  role: Role | null;
 
   @ManyToOne(() => ParentRole, { onDelete: 'RESTRICT', nullable: false })
   @JoinColumn({ name: 'parent_role_id' })

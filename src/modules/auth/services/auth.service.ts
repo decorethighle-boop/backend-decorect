@@ -1,5 +1,7 @@
 import { createClerkClient } from '@clerk/backend';
 import {
+  BadRequestException,
+  HttpException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -95,13 +97,17 @@ export class AuthService implements OnModuleInit {
     return this.db.findUserById(userId);
   }
 
-  async getAllUsers({ page = 1, search, roleId }: FilterUsers) {
+  async getAllUsers({ page = 1, search, roleId }: FilterUsers, userId: string) {
     try {
       const limit = 18;
       const skip = (page - 1) * limit;
 
       const query = await this.db.getUsersQueryBuilder();
-      query.orderBy('user.created_at', 'DESC').take(limit).skip(skip);
+      query
+        .orderBy('user.created_at', 'DESC')
+        .take(limit)
+        .skip(skip)
+        .andWhere('user.id != :userId', { userId });
 
       if (search) {
         query.andWhere(
@@ -130,6 +136,10 @@ export class AuthService implements OnModuleInit {
     } catch {
       throw new InternalServerErrorException('Error fetching users');
     }
+  }
+
+  async addRoleToUser(userId: string, roleId: string) {
+    await this.db.addRoleToUser(userId, roleId);
   }
 
   async deleteUser(userId: string) {
@@ -205,12 +215,21 @@ export class AuthService implements OnModuleInit {
 
   async createRole(role: CreateOrUpdateRole) {
     try {
+      const forbiddenNames = ['admin', 'user'];
+
+      if (forbiddenNames.includes(role.name.toLowerCase())) {
+        throw new BadRequestException('Role name not allowed');
+      }
+
       const parentRole = await this.db.findParentRoleByHierarchy(2);
-      if (!parentRole) throw new NotFoundException(`Parent role not found`);
+      if (!parentRole) {
+        throw new NotFoundException('Parent role not found');
+      }
 
       const permissions = await this.db.findPermissionsByIds(role.permissions);
-      if (permissions.length !== role.permissions.length)
-        throw new NotFoundException(`Some permissions were not found`);
+      if (permissions.length !== role.permissions.length) {
+        throw new NotFoundException('Some permissions were not found');
+      }
 
       const newRole = new Role();
       newRole.id = role.id;
@@ -220,12 +239,21 @@ export class AuthService implements OnModuleInit {
 
       await this.db.saveRole(newRole);
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       throw new InternalServerErrorException('Error creating role');
     }
   }
 
   async updateRole(role: CreateOrUpdateRole) {
     try {
+      const forbiddenNames = ['admin', 'user'];
+
+      if (forbiddenNames.includes(role.name.toLowerCase())) {
+        throw new BadRequestException('Role name not allowed');
+      }
       const roleToUpdate = await this.db.findRoleById(role.id);
       if (!roleToUpdate) throw new NotFoundException(`Role not found`);
 
@@ -237,7 +265,10 @@ export class AuthService implements OnModuleInit {
       roleToUpdate.permissions = permissions;
 
       await this.db.saveRole(roleToUpdate);
-    } catch {
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new InternalServerErrorException('Error updating role');
     }
   }

@@ -132,6 +132,10 @@ export class GeneratedVariantDto {
   @IsString()
   name: string;
 
+  @IsOptional()
+  @IsString()
+  sku?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => GeneratedVariantValueDto)

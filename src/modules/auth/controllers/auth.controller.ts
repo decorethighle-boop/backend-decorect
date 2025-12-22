@@ -8,6 +8,7 @@ import {
   Post,
   Put,
   Query,
+  Req,
   Res,
   UseGuards,
   UsePipes,
@@ -76,9 +77,17 @@ export class AuthController {
 
   @Get('users')
   @RolesDecorator(Roles.Admin)
-  async getAllUsers(@Query() filters: FilterUsers, @Res() res: Response) {
+  async getAllUsers(
+    @Query() filters: FilterUsers,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
     try {
-      const { users, metadata } = await this.authService.getAllUsers(filters);
+      const user = req['user'];
+      const { users, metadata } = await this.authService.getAllUsers(
+        filters,
+        user.sub,
+      );
       return res.status(HttpStatus.OK).json({
         success: true,
         data: { users, metadata },
@@ -93,10 +102,45 @@ export class AuthController {
     }
   }
 
+  @Post('users/add-role-to-user')
+  @RolesDecorator(Roles.Admin)
+  async addRoleToUser(
+    @Body() body: { userId: string; roleId: string },
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    try {
+      const user = req['user'];
+      if (user.sub === body.userId) {
+        throw new Error('You cannot change your own role');
+      }
+      await this.authService.addRoleToUser(body.userId, body.roleId);
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: null,
+        message: 'Role added successfully',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message: error.message || 'Role add failed',
+      });
+    }
+  }
+
   @Delete('users/:userId')
   @RolesDecorator(Roles.Admin)
-  async deleteUser(@Param('userId') userId: string, @Res() res: Response) {
+  async deleteUser(
+    @Param('userId') userId: string,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
     try {
+      const user = req['user'];
+      if (user.sub === userId) {
+        throw new Error('You cannot delete your own user');
+      }
       await this.authService.deleteUser(userId);
       return res.status(HttpStatus.OK).json({
         success: true,

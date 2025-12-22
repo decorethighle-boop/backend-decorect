@@ -21,17 +21,30 @@ export class AuthDbService {
   // ---------------------------------------------------------------------------
 
   async findUserByClerkId(clerkUserId: string) {
-    return this.userRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { clerkUserId },
-      relations: ['parentRole', 'role'],
+      relations: ['parentRole', 'role', 'role.parentRole', 'role.permissions'],
     });
-  }
 
+    if (!user) return null;
+
+    return {
+      ...user,
+      parentRole: user.role?.parentRole ?? user.parentRole,
+    };
+  }
   async findUserById(id: string) {
-    return this.userRepository.findOne({
+    const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['parentRole', 'role'],
+      relations: ['parentRole', 'role', 'role.parentRole', 'role.permissions'],
     });
+
+    if (!user) return null;
+
+    return {
+      ...user,
+      parentRole: user.role?.parentRole ?? user.parentRole,
+    };
   }
 
   async saveUser(user: User) {
@@ -59,6 +72,44 @@ export class AuthDbService {
         'role',
         'parentRole',
       ]);
+  }
+
+  async addRoleToUser(userId: string, roleId: string) {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['role', 'parentRole'],
+    });
+
+    if (!user) {
+      throw new InternalServerErrorException('User not found');
+    }
+
+    const role = await this.roleRepository.findOne({
+      where: { id: roleId },
+      relations: ['parentRole'],
+    });
+
+    if (role) {
+      user.role = role;
+      user.parentRole = role.parentRole;
+
+      await this.userRepository.save(user);
+      return;
+    }
+
+    const parentRole = await this.parentRoleRepository.findOne({
+      where: { id: roleId },
+    });
+
+    if (parentRole) {
+      user.parentRole = parentRole;
+      user.role = null;
+
+      await this.userRepository.save(user);
+      return;
+    }
+
+    throw new InternalServerErrorException('Role or ParentRole not found');
   }
 
   // ---------------------------------------------------------------------------
