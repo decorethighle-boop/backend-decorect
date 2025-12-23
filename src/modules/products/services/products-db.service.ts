@@ -93,13 +93,14 @@ export class ProductsDbService {
   async getProductsQueryBuilder() {
     return this.productsRepository
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.productType', 'productType');
+      .leftJoinAndSelect('product.productType', 'productType')
+      .leftJoinAndSelect('product.supplier', 'supplier');
   }
 
   async getProductById(id: string) {
     return this.productsRepository.findOne({
       where: { id },
-      relations: ['productType'],
+      relations: ['productType', 'supplier'],
     });
   }
 

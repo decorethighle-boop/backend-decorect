@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
+import { Supplier } from 'src/modules/suppliers/entity/supplier.entity';
 import { ProductionCountry } from '../../production_countries/entities/production-country.entity';
 import { ProductType } from './product-type.entity';
 
@@ -68,6 +69,10 @@ export class Product {
   @ManyToOne(() => ProductionCountry, { nullable: false, eager: true })
   @JoinColumn({ name: 'production_country_id' })
   productionCountry: ProductionCountry;
+
+  @ManyToOne(() => Supplier, { nullable: false, eager: true })
+  @JoinColumn({ name: 'supplier_id' })
+  supplier: Supplier;
 
   @Column({ type: 'jsonb', nullable: false })
   categories: VariantCategory[];

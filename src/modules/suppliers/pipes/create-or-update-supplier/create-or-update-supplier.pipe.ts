@@ -1,12 +1,9 @@
 import { ArgumentMetadata, Injectable, PipeTransform } from '@nestjs/common';
-import { CreateOrUpdateProductionCountryDto } from '../../dto/create_or_edit_production_country.dto';
+import { CreateOrUpdateSupplierDto } from '../../dto/creater-or-update-supplier.dto';
 
 @Injectable()
-export class CreateOrUpdateProductionCountryPipe implements PipeTransform {
-  transform(
-    value: CreateOrUpdateProductionCountryDto,
-    metadata: ArgumentMetadata,
-  ) {
+export class CreateOrUpdateSupplierPipe implements PipeTransform {
+  transform(value: CreateOrUpdateSupplierDto, metadata: ArgumentMetadata) {
     if (metadata.type !== 'body') {
       return value;
     }

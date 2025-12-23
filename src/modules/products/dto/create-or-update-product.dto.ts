@@ -40,6 +40,9 @@ export class CreateOrUpdateProductDto {
   @IsUUID('4', { message: 'id must be a valid UUID (v4)' })
   productionCountryId: string;
 
+  @IsUUID('4', { message: 'id must be a valid UUID (v4)' })
+  supplierId: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => VariantCategoriesDto)

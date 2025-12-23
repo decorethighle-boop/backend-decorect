@@ -1,3 +1,4 @@
+import { Supplier } from 'src/modules/suppliers/entity/supplier.entity';
 import { Product } from '../entities/product.entity';
 
 export type ProductsVariantsResponse = {
@@ -5,6 +6,7 @@ export type ProductsVariantsResponse = {
   categoryValueId?: string;
   name: string;
   variantsCount?: number;
+  supplier?: Supplier;
   images?: {
     main_photo: string;
     gallery: string[];

@@ -24,6 +24,8 @@ import { Product } from './modules/products/entities/product.entity';
 import { ProductsModule } from './modules/products/products.module';
 import { RangesController } from './modules/ranges/controllers/ranges.controller';
 import { RangesModule } from './modules/ranges/ranges.module';
+import { Supplier } from './modules/suppliers/entity/supplier.entity';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { WishlistsController } from './modules/wishlist/controllers/wishlists.controller';
 import { Wishlist } from './modules/wishlist/entities/wishlist.entity';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
@@ -51,6 +53,7 @@ config({ path: ['.env'] });
         Product,
         Wishlist,
         ProductionCountry,
+        Supplier,
       ],
       synchronize: true,
       autoLoadEntities: true,
@@ -61,6 +64,7 @@ config({ path: ['.env'] });
     RangesModule,
     WishlistModule,
     ProductionCountriesModule,
+    SuppliersModule,
   ],
   providers: [AppService],
 })
@@ -75,7 +79,8 @@ export class AppModule implements NestModule {
         ProductsController,
         WishlistsController,
         RangesController,
-        // ProductionCountriesModule,
+        ProductionCountriesModule,
+        SuppliersModule,
       );
   }
 }
