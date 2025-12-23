@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Supplier } from 'src/modules/suppliers/entity/supplier.entity';
 import { Wishlist } from 'src/modules/wishlist/entities/wishlist.entity';
 import { Repository } from 'typeorm';
 import { ProductionCountry } from '../../production_countries/entities/production-country.entity';
@@ -27,6 +28,9 @@ export class ProductsDbService {
 
     @InjectRepository(ProductionCountry)
     private readonly productionCountriesRepository: Repository<ProductionCountry>,
+
+    @InjectRepository(Supplier)
+    private readonly suppliersRepository: Repository<Supplier>,
   ) {}
 
   // --------------------------------------------------------------------------------
@@ -129,12 +133,21 @@ export class ProductsDbService {
       throw new NotFoundException(`ProductionCountry not found`);
     }
 
+    const supplier = await this.suppliersRepository.findOne({
+      where: { id: body.supplierId },
+    });
+
+    if (!supplier) {
+      throw new NotFoundException(`Supplier not found`);
+    }
+
     const product = this.productsRepository.create({
       id: body.id,
       name: body.name,
       productType: productType,
       description: body.description,
       productionCountry: productionCountry,
+      supplier: supplier,
       categories: body.categories.map(cat => ({
         ...cat,
         depends_on: cat.depends_on ?? false,
@@ -231,6 +244,14 @@ export class ProductsDbService {
       throw new NotFoundException(`ProductionCountry not found`);
     }
 
+    const supplier = await this.suppliersRepository.findOne({
+      where: { id: body.supplierId },
+    });
+
+    if (!supplier) {
+      throw new NotFoundException(`Supplier not found`);
+    }
+
     const isVariantReferenced = (variantName: string) =>
       updatedWishlists.some(w =>
         w.products.some(
@@ -241,6 +262,7 @@ export class ProductsDbService {
     product.name = body.name;
     product.description = body.description;
     product.productionCountry = productionCountry;
+    product.supplier = supplier;
     product.categories = body.categories.map(cat => ({
       ...cat,
       depends_on: cat.depends_on ?? false,
