@@ -108,6 +108,7 @@ export class ProductsService {
           return {
             productId: p.id,
             name: p.name,
+            variantsCount: p.variants?.length || 0,
           };
         }
 
@@ -121,6 +122,7 @@ export class ProductsService {
         return {
           productId: p.id,
           name: p.name,
+          variantsCount: p.variants?.length || 0,
           images: {
             main_photo,
             gallery,

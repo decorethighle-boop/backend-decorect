@@ -4,6 +4,7 @@ export type ProductsVariantsResponse = {
   productId: string;
   categoryValueId?: string;
   name: string;
+  variantsCount?: number;
   images?: {
     main_photo: string;
     gallery: string[];
@@ -142,6 +143,7 @@ export function fromProductsToProductsVariantsResponse(
         productId: product.id,
         categoryValueId: grouperValue.category_value_id,
         name: `${product.name} ${grouperValue.name}`,
+        variantsCount: generatedVariants.length,
         images: grouperValue.images,
       });
     });
