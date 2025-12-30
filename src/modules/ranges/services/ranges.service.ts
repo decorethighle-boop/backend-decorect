@@ -11,7 +11,7 @@ import { FilterRanges } from '../types/filter-ranges';
 import { RangesDbService } from './ranges-db.service';
 
 const WITHOUT_GROUP_ID = 'without-group';
-const WITHOUT_GROUP_NAME = 'Without group';
+const WITHOUT_GROUP_NAME = 'Ungrouped';
 
 @Injectable()
 export class RangesService {
