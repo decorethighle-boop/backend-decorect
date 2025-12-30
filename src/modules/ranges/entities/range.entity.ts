@@ -54,4 +54,5 @@ export interface RangeResponse {
   id: string;
   name: string;
   imageBanner: string;
+  variantsCount?: number;
 }

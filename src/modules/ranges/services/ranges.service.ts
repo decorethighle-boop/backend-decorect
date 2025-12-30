@@ -180,6 +180,7 @@ export class RangesService {
             id: r.id,
             name: r.name,
             imageBanner: r.imageBanner,
+            variantsCount: r.variants?.length || 0,
           })),
         };
 
@@ -310,6 +311,7 @@ export class RangesService {
             id: r.id,
             name: r.name,
             imageBanner: r.imageBanner,
+            variantsCount: r.variants?.length || 0,
           });
           return acc;
         }
@@ -322,6 +324,7 @@ export class RangesService {
             id: r.id,
             name: r.name,
             imageBanner: r.imageBanner,
+            variantsCount: r.variants?.length || 0,
           });
         }
 
