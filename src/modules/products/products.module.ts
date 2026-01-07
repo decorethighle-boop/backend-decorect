@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductionCountry } from '../production_countries/entities/production-country.entity';
+import { ProductsRange } from '../ranges/entities/range.entity';
 import { Supplier } from '../suppliers/entity/supplier.entity';
 import { Wishlist } from '../wishlist/entities/wishlist.entity';
 import { ProductsController } from './controllers/products.controller';
@@ -18,6 +19,7 @@ import { ProductsService } from './services/products.service';
       Wishlist,
       ProductionCountry,
       Supplier,
+      ProductsRange,
     ]),
   ],
   controllers: [ProductsController],

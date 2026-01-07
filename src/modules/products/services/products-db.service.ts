@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ProductsRange } from 'src/modules/ranges/entities/range.entity';
 import { Supplier } from 'src/modules/suppliers/entity/supplier.entity';
 import { Wishlist } from 'src/modules/wishlist/entities/wishlist.entity';
 import { Repository } from 'typeorm';
@@ -25,6 +26,9 @@ export class ProductsDbService {
 
     @InjectRepository(Wishlist)
     private readonly wishlistRepository: Repository<Wishlist>,
+
+    @InjectRepository(ProductsRange)
+    private readonly rangeRepository: Repository<ProductsRange>,
 
     @InjectRepository(ProductionCountry)
     private readonly productionCountriesRepository: Repository<ProductionCountry>,
@@ -171,6 +175,9 @@ export class ProductsDbService {
     // Obtener todos los wishlists (para escala grande filtra por wishlists que contienen product.id)
     const allWishlists = await this.wishlistRepository.find();
 
+    // Obtener todos los ranges (para escala grande filtra por ranges que contienen product.id)
+    const allRanges = await this.rangeRepository.find();
+
     // Nombres de variantes antiguas y nuevas
     const oldVariantNames = product.variants.map(v => v.name);
     const newVariantNames = body.variants.map(v => v.name);
@@ -182,7 +189,7 @@ export class ProductsDbService {
 
     // Si no hay variantes removidas no hay conflicto por eliminación
     if (removedVariantNames.length > 0) {
-      // Detectar si alguna de las variantes removidas está en algún wishlist
+      // --------- WISHLISTS (lógica existente, sin cambios conceptuales) ----------
       const removedVariantsInWishlists: {
         wishlistId: string;
         wishlistName: string;
@@ -204,14 +211,11 @@ export class ProductsDbService {
         }
       }
 
-      // Si hay referencias y NO nos pasan force -> conflicto
       if (!force && removedVariantsInWishlists.length > 0) {
         throw new ConflictException('WISHLISTSCONFLICT');
       }
 
-      // Si force = true -> eliminar de los wishlists las referencias a las variantes removidas
       if (force && removedVariantNames.length > 0) {
-        let modified = false;
         for (const w of allWishlists) {
           const originalLength = w.products.length;
           w.products = w.products.filter(
@@ -223,18 +227,61 @@ export class ProductsDbService {
           );
 
           if (w.products.length !== originalLength) {
-            // guardamos sólo si hubo cambio
             await this.wishlistRepository.save(w);
-            modified = true;
           }
         }
-        // si modificamos wishlists, podríamos recargarlos más abajo para recalcular inAWishlist
-        // Nota: para escala grande, filtra por wishlist que contienen product.id en vez de traerlos todos.
+      }
+
+      // --------- RANGES (nueva lógica equivalente a la de wishlists) ----------
+      const removedVariantsInRanges: {
+        rangeId: string;
+        rangeName: string;
+        variantName: string;
+      }[] = [];
+
+      for (const r of allRanges) {
+        // r.variants es ProductRangeVariant[]
+        for (const vr of r.variants || []) {
+          if (
+            vr.productId === product.id &&
+            removedVariantNames.includes(vr.variantName)
+          ) {
+            removedVariantsInRanges.push({
+              rangeId: r.id,
+              rangeName: r.name,
+              variantName: vr.variantName,
+            });
+          }
+        }
+      }
+
+      // Si hay referencias en ranges y NO nos pasan force -> conflicto
+      if (!force && removedVariantsInRanges.length > 0) {
+        throw new ConflictException('RANGESCONFLICT');
+      }
+
+      // Si force = true -> eliminar de los ranges las referencias a las variantes removidas
+      if (force && removedVariantNames.length > 0) {
+        for (const r of allRanges) {
+          const originalLength = (r.variants || []).length;
+          r.variants = (r.variants || []).filter(
+            v =>
+              !(
+                v.productId === product.id &&
+                removedVariantNames.includes(v.variantName)
+              ),
+          );
+
+          if ((r.variants || []).length !== originalLength) {
+            await this.rangeRepository.save(r);
+          }
+        }
       }
     }
 
-    // Recargamos wishlists actualizados para saber qué variantes siguen referenciadas
+    // Recargamos wishlists y ranges actualizados para saber qué variantes siguen referenciadas
     const updatedWishlists = await this.wishlistRepository.find();
+    const updatedRanges = await this.rangeRepository.find();
 
     const productionCountry = await this.productionCountriesRepository.findOne({
       where: { id: body.productionCountryId },
@@ -252,10 +299,16 @@ export class ProductsDbService {
       throw new NotFoundException(`Supplier not found`);
     }
 
+    // Ahora consideramos referencias tanto en wishlists como en ranges
     const isVariantReferenced = (variantName: string) =>
       updatedWishlists.some(w =>
         w.products.some(
           p => p.productId === product.id && p.variantName === variantName,
+        ),
+      ) ||
+      updatedRanges.some(r =>
+        (r.variants || []).some(
+          v => v.productId === product.id && v.variantName === variantName,
         ),
       );
 

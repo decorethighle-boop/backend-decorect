@@ -55,7 +55,6 @@ export class ProductsService {
   // --------------------------------------------------------------------------------
   // Products
   // --------------------------------------------------------------------------------
-
   async getProducts({
     page = 1,
     search,
@@ -68,9 +67,18 @@ export class ProductsService {
 
     const query = await this.db.getProductsQueryBuilder();
 
+    // 🔍 SEARCH: producto + descripción + nombre de variante (jsonb)
     if (search) {
       query.andWhere(
-        '(product.name ILIKE :search OR product.description ILIKE :search)',
+        `(
+        product.name ILIKE :search
+        OR product.description ILIKE :search
+        OR EXISTS (
+          SELECT 1
+          FROM jsonb_array_elements(product.variants) AS variant
+          WHERE variant->>'name' ILIKE :search
+        )
+      )`,
         { search: `%${search}%` },
       );
     }
@@ -93,15 +101,34 @@ export class ProductsService {
 
     const [products, total] = await query.getManyAndCount();
 
+    let filteredProducts = products;
+
+    if (search) {
+      const s = search.toLowerCase();
+
+      filteredProducts = products.map(p => {
+        const matchedVariants = (p.variants || []).filter(v =>
+          v.name?.toLowerCase().includes(s),
+        );
+
+        return {
+          ...p,
+          variants: matchedVariants,
+        };
+      });
+    }
+
     let variants: ProductsVariantsResponse[] = [];
+
+    const sourceProducts = search ? filteredProducts : products;
 
     if (user?.parentRole.hierarchy !== 2) {
       variants = fromProductsToProductsVariantsResponse(
-        products,
+        sourceProducts,
         categoryValueId,
       );
     } else {
-      variants = products.map(p => {
+      variants = sourceProducts.map(p => {
         const grouperCategory = p.categories.find(cat => cat.grouper);
 
         if (!grouperCategory || !grouperCategory.values.length) {
