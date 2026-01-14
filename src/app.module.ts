@@ -24,6 +24,7 @@ import { Product } from './modules/products/entities/product.entity';
 import { ProductsModule } from './modules/products/products.module';
 import { RangesController } from './modules/ranges/controllers/ranges.controller';
 import { RangesModule } from './modules/ranges/ranges.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { Supplier } from './modules/suppliers/entity/supplier.entity';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { WishlistsController } from './modules/wishlist/controllers/wishlists.controller';
@@ -65,6 +66,7 @@ config({ path: ['.env'] });
     WishlistModule,
     ProductionCountriesModule,
     SuppliersModule,
+    SettingsModule,
   ],
   providers: [AppService],
 })
@@ -72,7 +74,11 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(TokenMiddleware)
-      .exclude({ path: '/auth/login', method: RequestMethod.POST })
+      .exclude(
+        { path: '/auth/login', method: RequestMethod.POST },
+        { path: '/settings', method: RequestMethod.GET },
+        { path: '/settings/*', method: RequestMethod.GET },
+      )
       .forRoutes(
         AuthController,
         CategoriesController,
@@ -81,6 +87,7 @@ export class AppModule implements NestModule {
         RangesController,
         ProductionCountriesModule,
         SuppliersModule,
+        SettingsModule,
       );
   }
 }
