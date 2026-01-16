@@ -20,6 +20,7 @@ export class HomePageData {
 export class VariantCard {
   selectedPhoto: string;
   productId: string;
+  productName: string;
   variantName: string;
   variantImage: string;
   selectedCategoryValueIds: string[];
