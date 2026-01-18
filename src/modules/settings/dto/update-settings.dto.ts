@@ -14,6 +14,7 @@ export class HomePageData {
   buttonLink: string;
   cards: VariantCard[];
   ranges: ProductRange[];
+  categories: CategoriesCard[];
   showroom: Showroom;
 }
 
@@ -22,6 +23,8 @@ export class VariantCard {
   productId: string;
   productName: string;
   variantName: string;
+  customName?: string;
+  customDescription?: string;
   variantImage: string;
   selectedCategoryValueIds: string[];
 }
@@ -30,6 +33,15 @@ export class ProductRange {
   id: string;
   name: string;
   imageBanner: string;
+}
+
+export class CategoriesCard {
+  productTypeId: string;
+  categoryId: string;
+  categoryName: string;
+  categoryValueId: string;
+  categoryValueName: string;
+  image: string;
 }
 
 export class Showroom {
@@ -82,6 +94,8 @@ export class SettingsData {
 
 export function isSettingsData(data: any): data is SettingsData {
   return (
-    typeof data?.show_suppliers === 'boolean' && typeof data?.logo === 'string'
+    typeof data?.show_suppliers === 'boolean' &&
+    typeof data?.logo === 'string' &&
+    typeof data?.footerLogo === 'string'
   );
 }

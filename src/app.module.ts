@@ -30,6 +30,7 @@ import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { WishlistsController } from './modules/wishlist/controllers/wishlists.controller';
 import { Wishlist } from './modules/wishlist/entities/wishlist.entity';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
+import { EmailModule } from './modules/email/email.module';
 
 config({ path: ['.env'] });
 
@@ -67,6 +68,7 @@ config({ path: ['.env'] });
     ProductionCountriesModule,
     SuppliersModule,
     SettingsModule,
+    EmailModule,
   ],
   providers: [AppService],
 })
