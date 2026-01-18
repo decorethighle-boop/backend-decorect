@@ -1,4 +1,10 @@
-export type SettingsDataUnion = HomePageData | InfoData | SettingsData;
+export type SettingsDataUnion =
+  | HomePageData
+  | InfoData
+  | SettingsData
+  | WhishlistData
+  | RangesData
+  | ProductTypeData;
 
 export interface UpdateSettingsDto {
   data: SettingsDataUnion;
@@ -97,5 +103,63 @@ export function isSettingsData(data: any): data is SettingsData {
     typeof data?.show_suppliers === 'boolean' &&
     typeof data?.logo === 'string' &&
     typeof data?.footerLogo === 'string'
+  );
+}
+
+// =============================================================================
+// WHISHLIST
+// =============================================================================
+export class WhishlistData {
+  wishlistBanner: string;
+  wishlistText: string;
+}
+
+export function isWishlistData(data: any): data is WhishlistData {
+  return (
+    typeof data?.wishlistBanner === 'string' &&
+    typeof data?.wishlistText === 'string'
+  );
+}
+
+// =============================================================================
+// RANGES
+// =============================================================================
+export class RangesData {
+  rangesBanner: string;
+  rangesText: string;
+}
+
+export function isRangesData(data: any): data is RangesData {
+  return (
+    typeof data?.rangesBanner === 'string' &&
+    typeof data?.rangesText === 'string'
+  );
+}
+
+// =============================================================================
+// PRODUCTTYPE
+// =============================================================================
+export class ProductTypeData {
+  productTypesBanner: ProductTypesBanner[];
+}
+
+export class ProductTypesBanner {
+  productTypeId: string;
+  productTypeName: string;
+  imageBanner: string;
+}
+
+export function isProductTypeData(data: any): data is ProductTypeData {
+  return (
+    Array.isArray(data?.productTypesBanner) &&
+    data?.productTypesBanner.every(item => isProductTypesBanner(item))
+  );
+}
+
+export function isProductTypesBanner(data: any): data is ProductTypesBanner {
+  return (
+    typeof data?.productTypeId === 'string' &&
+    typeof data?.productTypeName === 'string' &&
+    typeof data?.imageBanner === 'string'
   );
 }

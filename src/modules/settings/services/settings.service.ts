@@ -2,7 +2,10 @@ import { BadRequestException, Injectable, OnModuleInit } from '@nestjs/common';
 import {
   isHomePageData,
   isInfoData,
+  isProductTypeData,
+  isRangesData,
   isSettingsData,
+  isWishlistData,
   SettingsDataUnion,
 } from '../dto/update-settings.dto';
 import { SettingsType } from '../entities/settings.entity';
@@ -37,6 +40,12 @@ export class SettingsService implements OnModuleInit {
       type = SettingsType.INFO;
     } else if (isSettingsData(data)) {
       type = SettingsType.SETTINGS;
+    } else if (isWishlistData(data)) {
+      type = SettingsType.WHISHLIST;
+    } else if (isRangesData(data)) {
+      type = SettingsType.RANGES;
+    } else if (isProductTypeData(data)) {
+      type = SettingsType.PRODUCTTYPE;
     } else {
       throw new BadRequestException('Invalid settings data type');
     }
