@@ -77,6 +77,7 @@ export function isInfoData(data: any): data is InfoData {
 export class SettingsData {
   show_suppliers: boolean;
   logo: string;
+  footerLogo: string;
 }
 
 export function isSettingsData(data: any): data is SettingsData {
