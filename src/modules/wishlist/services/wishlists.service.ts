@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { Product } from 'src/modules/products/entities/product.entity';
 import { ProductsDbService } from 'src/modules/products/services/products-db.service';
@@ -136,6 +136,82 @@ export class WishlistService {
         lastPage: Math.ceil(total / limit),
         hasNextPage: page * limit < total,
       },
+    };
+  }
+
+  async findById(id: string): Promise<{ wishlist: WishlistResponse }> {
+    const wishlist = await this.db.findById(id);
+
+    if (!wishlist) {
+      throw new NotFoundException('Wishlist not found');
+    }
+
+    // 1. Recolectar IDs de productos
+    const allProductIds = new Set<string>();
+
+    if (wishlist.products && Array.isArray(wishlist.products)) {
+      wishlist.products.forEach(p => allProductIds.add(p.productId));
+    }
+
+    // 2. Obtener productos
+    const productsMap = new Map<string, Product>();
+
+    if (allProductIds.size > 0) {
+      const productsQb = await this.productsDbService.getProductsQueryBuilder();
+
+      const products = await productsQb
+        .where('product.id IN (:...ids)', { ids: Array.from(allProductIds) })
+        .getMany();
+
+      products.forEach(p => productsMap.set(p.id, p));
+    }
+
+    // 3. Mapear productos de wishlist → WishlistProduct
+    const mappedProducts: WishlistProduct[] = (wishlist.products || [])
+      .map(wishlistVariant => {
+        const fullProduct = productsMap.get(wishlistVariant.productId);
+
+        if (!fullProduct) return null;
+
+        const categoryValues: WhislistCategoryValue[] = [];
+
+        fullProduct.categories.forEach(cat => {
+          const isGrouper = cat.grouper ?? false;
+
+          cat.values.forEach(val => {
+            if (
+              wishlistVariant.selectedCategoryValueIds.includes(
+                val.category_value_id,
+              )
+            ) {
+              categoryValues.push({
+                category_value_id: val.category_value_id,
+                name: val.name,
+                grouper: isGrouper,
+                images: val.images,
+              });
+            }
+          });
+        });
+
+        return {
+          productId: wishlistVariant.productId,
+          productName: fullProduct.name,
+          variantName: wishlistVariant.variantName,
+          categoryValues,
+        };
+      })
+      .filter((p): p is WishlistProduct => p !== null);
+
+    // 4. Armar WishlistResponse
+    const wishlistResponse: WishlistResponse = {
+      id: wishlist.id,
+      name: wishlist.name,
+      products: mappedProducts,
+    };
+
+    return {
+      wishlist: wishlistResponse,
     };
   }
 

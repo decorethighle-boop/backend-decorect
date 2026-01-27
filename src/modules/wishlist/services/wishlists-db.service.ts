@@ -52,6 +52,12 @@ export class WishlistDbService {
     return qb;
   }
 
+  async findById(id: string) {
+    return this.wishlistRepository.findOne({
+      where: { id },
+    });
+  }
+
   async create(wishlist: CreateOrUpdateWishlistDto, token: any) {
     const user = await this.userRepository.findOne({
       where: { id: token.sub },

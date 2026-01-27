@@ -70,6 +70,24 @@ export class WishlistsController {
     }
   }
 
+  @Get('/:id')
+  async getWishlistById(@Param('id') id: string, @Res() res: Response) {
+    try {
+      const wishlist = await this.service.findById(id);
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: wishlist,
+        message: 'Wishlist fetched',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message: error.message || 'Error fetching Wishlist',
+      });
+    }
+  }
+
   @Post('')
   @UsePipes(CreateOrUpdateWishlistPipe)
   async createWishlist(
