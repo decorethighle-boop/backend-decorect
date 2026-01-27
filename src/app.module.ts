@@ -4,6 +4,7 @@ import {
   NestModule,
   RequestMethod,
 } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { config } from 'dotenv';
@@ -16,6 +17,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
 import { CategoriesController } from './modules/categories/controllers/categories.controller';
 import { CategoryValue } from './modules/categories/entities/category-value.entity';
 import { Category } from './modules/categories/entities/category.entity';
+import { EmailModule } from './modules/email/email.module';
 import { ProductionCountry } from './modules/production_countries/entities/production-country.entity';
 import { ProductionCountriesModule } from './modules/production_countries/production_countries.module';
 import { ProductsController } from './modules/products/controllers/products.controller';
@@ -30,12 +32,12 @@ import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { WishlistsController } from './modules/wishlist/controllers/wishlists.controller';
 import { Wishlist } from './modules/wishlist/entities/wishlist.entity';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
-import { EmailModule } from './modules/email/email.module';
 
 config({ path: ['.env'] });
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '1d' },
