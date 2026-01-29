@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../auth/entities';
+import { EmailService } from '../email/services/email.service';
 import { Product } from '../products/entities/product.entity';
 import { ProductsModule } from '../products/products.module';
 import { WishlistsController } from './controllers/wishlists.controller';
@@ -14,6 +15,6 @@ import { WishlistService } from './services/wishlists.service';
     ProductsModule,
   ],
   controllers: [WishlistsController],
-  providers: [WishlistDbService, WishlistService],
+  providers: [WishlistDbService, WishlistService, EmailService],
 })
 export class WishlistModule {}

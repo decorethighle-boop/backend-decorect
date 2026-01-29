@@ -1,0 +1,52 @@
+<html>
+  <head>
+    <style>
+      body {
+        font-family: sans-serif;
+        color: #333;
+        margin: 0;
+        padding: 0;
+        background: #fafafa;
+      }
+      .header {
+        background: #f4f4f4;
+        padding: 20px;
+        text-align: center;
+      }
+      .content {
+        text-align: center;
+        margin: 40px 0;
+      }
+      .btn {
+        display: inline-block;
+        background: #4f46e5;
+        color: white;
+        padding: 14px 28px;
+        text-decoration: none;
+        border-radius: 8px;
+        font-weight: bold;
+      }
+      .btn:hover {
+        background: #4338ca;
+      }
+    </style>
+  </head>
+  <body>
+    <div class='header'>
+      <h1>{{userName}}
+        te envió una lista de deseos llamada
+        {{wishlistName}}</h1>
+    </div>
+
+    <div class='content'>
+      <a
+        href='{{frontendUrl}}/wishlist/{{wishlistId}}?username={{userName}}'
+        class='btn'
+        target='_blank'
+      >
+        Ver lista de deseos
+      </a>
+    </div>
+
+  </body>
+</html>

@@ -20,8 +20,10 @@ import {
   CreateOrUpdateWishlistDto,
   WishlistProductVariantDto,
 } from '../dto/create-or-update-wishlist.dto';
+import { SendWishlistEmailDto } from '../dto/send-wishlist-email.dto';
 import { CreateOrUpdateWishlistPipe } from '../pipes/create-or-update-whishlist/create-or-update-whishlist.pipe';
 import { GetWishlistsPipe } from '../pipes/get-wishlists/get-wishlists.pipe';
+import { SendWishlistEmailPipe } from '../pipes/send-wishlist-email/send-wishlist-email.pipe';
 import { WishlistService } from '../services/wishlists.service';
 import { type FilterWishlists } from '../types/filter-whislists';
 
@@ -207,6 +209,30 @@ export class WishlistsController {
         data: null,
         message:
           error.message || 'Error removing product variant from Wishlist',
+      });
+    }
+  }
+
+  @Post('/:id/send-email')
+  @UsePipes(SendWishlistEmailPipe)
+  async sendWishlistEmail(
+    @Param('id') id: string,
+    @Body() body: SendWishlistEmailDto,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    try {
+      await this.service.sendWishlistEmail(id, req['user'], body);
+      return res.status(HttpStatus.OK).json({
+        success: true,
+        data: null,
+        message: 'Wishlist email sent',
+      });
+    } catch (error) {
+      return res.status(error.status || HttpStatus.UNAUTHORIZED).json({
+        success: false,
+        data: null,
+        message: error.message || 'Error sending Wishlist email',
       });
     }
   }

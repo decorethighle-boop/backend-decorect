@@ -1,11 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
+import { EmailService } from 'src/modules/email/services/email.service';
 import { Product } from 'src/modules/products/entities/product.entity';
 import { ProductsDbService } from 'src/modules/products/services/products-db.service';
 import {
   CreateOrUpdateWishlistDto,
   WishlistProductVariantDto,
 } from '../dto/create-or-update-wishlist.dto';
+import { SendWishlistEmailDto } from '../dto/send-wishlist-email.dto';
 import {
   WhislistCategoryValue,
   WishlistProduct,
@@ -19,6 +21,7 @@ export class WishlistService {
   constructor(
     private readonly db: WishlistDbService,
     private readonly productsDbService: ProductsDbService,
+    private readonly emailService: EmailService,
   ) {}
 
   async hasWishlists(token: any) {
@@ -246,6 +249,28 @@ export class WishlistService {
       productId,
       variantName,
       token,
+    );
+  }
+
+  async sendWishlistEmail(
+    id: string,
+    token: any,
+    wishlist: SendWishlistEmailDto,
+  ) {
+    const userName = token.firstName + ' ' + token.lastName;
+    const wishlistId = id;
+    const wishlistName = wishlist.name;
+    const emailTo = wishlist.emailTo;
+
+    await this.emailService.sendEmail(
+      emailTo,
+      `Wishlist sended by ${userName}`,
+      'wishlist',
+      {
+        userName,
+        wishlistId,
+        wishlistName,
+      },
     );
   }
 }

@@ -37,18 +37,27 @@ export class EmailService {
     context: any,
   ) {
     const fromEmail = this.config.get('MAIL_FROM');
+    const frontendUrl = this.config.get('FRONTEND_URL');
 
     try {
       const templatePath = path.join(
-        __dirname,
-        '..',
+        process.cwd(),
+        'src',
+        'modules',
+        'email',
         'templates',
         `${templateName}.hbs`,
       );
 
       const templateSource = fs.readFileSync(templatePath, 'utf8');
       const template = handlebars.compile(templateSource);
-      const html = template(context);
+
+      const finalContext = {
+        ...context,
+        frontendUrl,
+      };
+
+      const html = template(finalContext);
 
       const info = await this.transporter.sendMail({
         from: `"Decorect" <${fromEmail}>`,
