@@ -89,8 +89,10 @@ export class AuthService implements OnModuleInit {
   }
 
   async sendNewUserEmail(userName: string) {
+    if (!process.env.CONFIRMATION_EMAIL) return;
+
     await this.emailService.sendEmail(
-      'guillermoferriol00@gmail.com',
+      process.env.CONFIRMATION_EMAIL,
       `New user registered`,
       'new-user',
       {
