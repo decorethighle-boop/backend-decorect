@@ -8,6 +8,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EmailService } from 'src/modules/email/services/email.service';
 import { CreateOrUpdateRole } from '../dto/create-or-update-role.type';
 import { LoginDto } from '../dto/login.dto';
 import { convertParentRoleToRole, Role, User } from '../entities';
@@ -26,6 +27,7 @@ export class AuthService implements OnModuleInit {
     private readonly configService: ConfigService,
     private readonly tokenService: TokenService,
     private readonly db: AuthDbService,
+    private readonly emailService: EmailService,
   ) {}
 
   async onModuleInit() {
@@ -65,6 +67,7 @@ export class AuthService implements OnModuleInit {
         user.email = clerkUser.emailAddresses[0]?.emailAddress;
         user.parentRole = defaultParentRole;
         await this.db.saveUser(user);
+        await this.sendNewUserEmail(user.firstName + ' ' + user.lastName);
       }
 
       const jwtPayload = createJwtPayload({
@@ -83,6 +86,17 @@ export class AuthService implements OnModuleInit {
         error.message || 'Error logging in',
       );
     }
+  }
+
+  async sendNewUserEmail(userName: string) {
+    await this.emailService.sendEmail(
+      'guillermoferriol00@gmail.com',
+      `New user registered`,
+      'new-user',
+      {
+        userName,
+      },
+    );
   }
 
   async refresh(refreshToken: string): Promise<TokenResponse> {
