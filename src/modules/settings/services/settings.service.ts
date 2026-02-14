@@ -3,6 +3,7 @@ import {
   isHomePageData,
   isInfoData,
   isProductTypeData,
+  isProductsMenuData,
   isRangesData,
   isSettingsData,
   isWishlistData,
@@ -46,6 +47,8 @@ export class SettingsService implements OnModuleInit {
       type = SettingsType.RANGES;
     } else if (isProductTypeData(data)) {
       type = SettingsType.PRODUCTTYPE;
+    } else if (isProductsMenuData(data)) {
+      type = SettingsType.PRODUCTSMENU;
     } else {
       throw new BadRequestException('Invalid settings data type');
     }

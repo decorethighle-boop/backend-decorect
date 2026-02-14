@@ -13,6 +13,7 @@ export enum SettingsType {
   WHISHLIST = 'whishlist',
   RANGES = 'ranges',
   PRODUCTTYPE = 'producttype',
+  PRODUCTSMENU = 'productsmenu',
 }
 
 @Entity('settings')

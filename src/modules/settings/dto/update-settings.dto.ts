@@ -4,7 +4,8 @@ export type SettingsDataUnion =
   | SettingsData
   | WhishlistData
   | RangesData
-  | ProductTypeData;
+  | ProductTypeData
+  | ProductsMenuData;
 
 export interface UpdateSettingsDto {
   data: SettingsDataUnion;
@@ -162,4 +163,45 @@ export function isProductTypesBanner(data: any): data is ProductTypesBanner {
     typeof data?.productTypeName === 'string' &&
     typeof data?.imageBanner === 'string'
   );
+}
+
+// =============================================================================
+// PRODUCTS MENU
+// =============================================================================
+export enum MenuItemStyle {
+  DEFAULT = 'default',
+  BIG = 'big',
+  UNDERLINE_CARET = 'underline_caret',
+}
+
+export enum MenuItemType {
+  MANUAL = 'manual',
+  PRODUCT_TYPE = 'product_type',
+  CATEGORY_VALUE = 'category_value',
+}
+
+export class ProductsMenuItem {
+  id: string;
+  type: MenuItemType;
+  style: MenuItemStyle;
+  label: string;
+  href?: string;
+  productTypeId?: string;
+  productTypeName?: string;
+  categoryValueId?: string;
+  categoryValueName?: string;
+}
+
+export class ProductsMenuGroup {
+  id: string;
+  title: string;
+  items: ProductsMenuItem[];
+}
+
+export class ProductsMenuData {
+  groups: ProductsMenuGroup[];
+}
+
+export function isProductsMenuData(data: any): data is ProductsMenuData {
+  return Array.isArray(data?.groups);
 }
