@@ -3,5 +3,6 @@ export type FilterProducts = {
   search?: string;
   productTypeId: string;
   categoryValueId?: string;
+  categoryId?: string;
   user: any;
 };

@@ -60,6 +60,7 @@ export class ProductsService {
     search,
     productTypeId,
     categoryValueId,
+    categoryId,
     user,
   }: FilterProducts) {
     const limit = 16;
@@ -94,6 +95,12 @@ export class ProductsService {
         categoryValue: JSON.stringify([
           { values: [{ category_value_id: categoryValueId }] },
         ]),
+      });
+    }
+
+    if (categoryId) {
+      query.andWhere('product.categories @> :categoryFilter', {
+        categoryFilter: JSON.stringify([{ category_id: categoryId }]),
       });
     }
 
