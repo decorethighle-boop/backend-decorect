@@ -194,7 +194,7 @@ export class ProductsMenuItem {
 
 export class ProductsMenuGroup {
   id: string;
-  title: string;
+  title?: string;
   items: ProductsMenuItem[];
 }
 
