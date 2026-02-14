@@ -37,7 +37,7 @@ export class SettingsDbService {
     });
 
     if (!settings) {
-      throw new NotFoundException(`Settings ${type} not found`);
+      return { type, data: {} };
     }
 
     return settings;
@@ -46,15 +46,15 @@ export class SettingsDbService {
   /* ================= UPDATE ================= */
 
   async update(type: SettingsType, data: SettingsDataUnion) {
-    const settings = await this.settingsRepository.findOne({
+    let settings = await this.settingsRepository.findOne({
       where: { type },
     });
 
     if (!settings) {
-      throw new NotFoundException(`Settings ${type} not found`);
+      settings = this.settingsRepository.create({ type, data });
+    } else {
+      settings.data = data;
     }
-
-    settings.data = data;
 
     return this.settingsRepository.save(settings);
   }
