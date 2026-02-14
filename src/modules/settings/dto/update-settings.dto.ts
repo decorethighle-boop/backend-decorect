@@ -178,6 +178,7 @@ export enum MenuItemType {
   MANUAL = 'manual',
   PRODUCT_TYPE = 'product_type',
   CATEGORY_VALUE = 'category_value',
+  RANGE_GROUP = 'range_group',
 }
 
 export class ProductsMenuItem {
@@ -190,6 +191,8 @@ export class ProductsMenuItem {
   productTypeName?: string;
   categoryValueId?: string;
   categoryValueName?: string;
+  rangeGroupId?: string;
+  rangeGroupName?: string;
 }
 
 export class ProductsMenuGroup {
