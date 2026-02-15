@@ -41,8 +41,10 @@ export class EmailService {
 
     try {
       const templatePath = path.join(
-        __dirname,
-        '..',
+        process.cwd(),
+        'src',
+        'modules',
+        'email',
         'templates',
         `${templateName}.hbs`,
       );
